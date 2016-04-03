@@ -229,7 +229,7 @@ void NotifyWindow::updateNotifyDisplay() {
 			history->peer->dialogName().drawElided(p, rectForName.left(), rectForName.top(), rectForName.width());
 		} else {
 			p.setFont(st::msgNameFont->f);
-			static QString notifyTitle = st::msgNameFont->elided(qsl("Telegram Desktop"), rectForName.width());
+			static QString notifyTitle = st::msgNameFont->elided(QString::fromWCharArray(AppName), rectForName.width());
 			p.drawText(rectForName.left(), rectForName.top() + st::msgNameFont->ascent, notifyTitle);
 		}
 	}

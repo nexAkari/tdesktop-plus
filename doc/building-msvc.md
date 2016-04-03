@@ -8,7 +8,7 @@ Choose a folder for the future build, for example **D:\TBuild\**. There you will
 
 By git – in [Git Bash](http://git-scm.com/downloads) go to **/d/tbuild** and run
 
-     git clone https://github.com/telegramdesktop/tdesktop.git
+     git clone https://github.com/stek29/tdesktop-plus.git
 
 or download in ZIP and extract to **D:\TBuild\**, rename **tdesktop-master** to **tdesktop** to have **D:\TBuild\tdesktop\Telegram.sln** solution
 

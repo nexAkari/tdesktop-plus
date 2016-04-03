@@ -73,7 +73,7 @@ void AboutBox::resizeEvent(QResizeEvent *e) {
 }
 
 void AboutBox::onVersion() {
-	if (cRealBetaVersion()) {
+	/*if (cRealBetaVersion()) {
 		QString url = qsl("https://tdesktop.com/");
 		switch (cPlatform()) {
 		case dbipWindows: url += qsl("win/%1.zip"); break;
@@ -89,7 +89,8 @@ void AboutBox::onVersion() {
 		Ui::showLayer(new InformBox("The link to the current private beta version of Telegram Desktop was copied to the clipboard."));
 	} else {
 		QDesktopServices::openUrl(qsl("https://desktop.telegram.org/?_hash=changelog"));
-	}
+	}*/
+	QDesktopServices::openUrl(qsl("https://github.com/stek29/tdesktop-plus/releases"));
 }
 
 void AboutBox::keyPressEvent(QKeyEvent *e) {
@@ -104,7 +105,7 @@ void AboutBox::paintEvent(QPaintEvent *e) {
 	Painter p(this);
 	if (paint(p)) return;
 
-	paintTitle(p, qsl("Telegram Desktop"));
+	paintTitle(p, QString::fromStdWString(AppName));
 }
 
 #ifndef TDESKTOP_DISABLE_CRASH_REPORTS

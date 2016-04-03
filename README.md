@@ -1,8 +1,6 @@
-# [Telegram Desktop][telegram_desktop] – Official Messenger
+# TDesktop Plus – UNOFFICIAL Telegram Messenger
 
-This is the complete source code and the build instructions for the alpha version of the official desktop client for the [Telegram][telegram] messenger, based on the [Telegram API][telegram_api] and the [MTProto][telegram_proto] secure protocol.
-
-[![Build Status](https://travis-ci.org/telegramdesktop/tdesktop.svg?branch=master)](https://travis-ci.org/telegramdesktop/tdesktop)
+This is the complete source code and the build instructions for the alpha version of the UNOFFICIAL extended desktop client for the [Telegram][telegram] messenger, based on the [Telegram Desktop][telegram_desktop], the [Telegram API][telegram_api] and the [MTProto][telegram_proto] secure protocol.
 
 The source code is published under GPLv3 with OpenSSL exception, the license is available [here][license].
 
@@ -10,7 +8,6 @@ The source code is published under GPLv3 with OpenSSL exception, the license is 
 
 * Windows XP - Windows 10 (**not** RT)
 * Mac OS X 10.8 - Mac OS X 10.11
-* Mac OS X 10.6 - Mac OS X 10.7 (separate build)
 * Ubuntu 12.04 - Ubuntu 15.04
 * Fedora 22
 
@@ -33,7 +30,6 @@ The source code is published under GPLv3 with OpenSSL exception, the license is 
 
 * [Visual Studio 2015][msvc]
 * [XCode 7][xcode]
-* [XCode 7 for OS X 10.6 and 10.7][xcode_old]
 * [Qt Creator 3.5.1 Ubuntu][qtcreator]
 * [Using qmake on GNU/Linux][qmake]
 
@@ -41,7 +37,7 @@ The source code is published under GPLv3 with OpenSSL exception, the license is 
 
 * ### Telegram
 
-  [Telegram Desktop][telegram_desktop] messenger
+  TDesktop Plus messenger
 
 * ### Updater
 
@@ -94,6 +90,5 @@ The source code is published under GPLv3 with OpenSSL exception, the license is 
 [license]: LICENSE
 [msvc]: doc/building-msvc.md
 [xcode]: doc/building-xcode.md
-[xcode_old]: doc/building-xcode-old.md
 [qtcreator]: doc/building-qtcreator.md
 [qmake]: doc/building-qmake.md

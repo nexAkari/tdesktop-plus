@@ -51,7 +51,7 @@ IntroStart::IntroStart(IntroWidget *parent) : IntroStep(parent)
 		_changeLang.show();
 	}
 
-	_headerWidth = st::introHeaderFont->width(qsl("Telegram Desktop"));
+	_headerWidth = st::introHeaderFont->width(QString::fromWCharArray(AppName));
 
 	setGeometry(parent->innerRect());
 
@@ -73,7 +73,7 @@ void IntroStart::paintEvent(QPaintEvent *e) {
 
 	p.setFont(st::introHeaderFont->f);
 	p.setPen(st::introColor->p);
-	p.drawText((width() - _headerWidth) / 2, hy, qsl("Telegram Desktop"));
+	p.drawText((width() - _headerWidth) / 2, hy, QString::fromWCharArray(AppName));
 
 	p.drawPixmap(QPoint((width() - st::aboutIcon.pxWidth()) / 2, hy - st::introIconSkip - st::aboutIcon.pxHeight()), App::sprite(), st::aboutIcon);
 }

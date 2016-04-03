@@ -82,7 +82,7 @@ Telegram Desktop is advancing quickly. It is therefore critical that you pull up
 
 To pull in upstream changes:
 
-    git remote add upstream https://github.com/telegramdesktop/tdesktop.git
+    git remote add upstream https://github.com/stek29/tdesktop-plus.git
     git fetch upstream master
 
 Check the log to be sure that you actually want the changes, before merging:

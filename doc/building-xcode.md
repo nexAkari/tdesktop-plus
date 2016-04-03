@@ -12,7 +12,7 @@ There you will have two folders, **Libraries** for third-party libs and **tdeskt
 
 By git – in Terminal go to **/Users/user/TBuild** and run:
 
-    git clone https://github.com/telegramdesktop/tdesktop.git
+    git clone https://github.com/stek29/tdesktop-plus.git
 
 or:
 * download in ZIP and extract to **/Users/user/TBuild**
