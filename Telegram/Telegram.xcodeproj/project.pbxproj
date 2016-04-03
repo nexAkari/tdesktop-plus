@@ -1376,6 +1376,8 @@
 			);
 			name = Telegram;
 			sourceTree = "<Group>";
+			usesTabs = 1;
+			wrapsLines = 0;
 		};
 		FE0A091FDBFB3E9C31B7A1BD /* Products */ = {
 			isa = PBXGroup;
