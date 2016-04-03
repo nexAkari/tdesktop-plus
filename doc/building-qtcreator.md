@@ -22,7 +22,7 @@ Choose a folder for the future build, for example **/home/user/TBuild** There yo
 
 By git – in Terminal go to **/home/user/TBuild** and run
 
-    git clone https://github.com/telegramdesktop/tdesktop.git
+    git clone https://github.com/stek29/tdesktop-plus.git
 
 or download in ZIP and extract to **/home/user/TBuild** rename **tdesktop-master** to **tdesktop** to have **/home/user/TBuild/tdesktop/Telegram/Telegram.pro** project
 

@@ -137,7 +137,7 @@ Copyright (c) 2014-2016 John Preston, https://desktop.telegram.org
 "lng_pinned_unpin" = "Entfernen";
 "lng_pinned_notify" = "Alle benachrichtigen";
 
-"lng_intro" = "Willkommen beim [a href=\"https://telegram.org/\"]offiziellen Desktop Messenger[/a].\n[b]Schnell[/b] und [b]sicher[/b] chatten leicht gemacht.";
+"lng_intro" = "Willkommen beim [a href=\"https://telegram.org/\"]INOFFIZIELLEN Desktop Messenger[/a].\n[b]Schnell[/b] und [b]sicher[/b] chatten leicht gemacht.";
 "lng_start_msgs" = "JETZT STARTEN";
 
 "lng_intro_next" = "WEITER";
@@ -854,8 +854,8 @@ Copyright (c) 2014-2016 John Preston, https://desktop.telegram.org
 "lng_box_leave" = "Verlassen";
 
 "lng_about_version" = "Version {version}";
-"lng_about_text_1" = "Dieser offizielle Messenger basiert auf [a href=\"https://core.telegram.org/api\"]Telegram API[/a] für Geschwindigkeit und Sicherheit.";
-"lng_about_text_2" = "Diese Software steht unter der [a href=\"https://github.com/telegramdesktop/tdesktop/blob/master/LICENSE\"]GNU GPL[/a] Version 3, der Quelltext ist bei [a href=\"https://github.com/telegramdesktop/tdesktop\"]GitHub[/a] verfügbar.";
+"lng_about_text_1" = "Dieser INOFFIZIELLE Messenger basiert auf [a href=\"https://core.telegram.org/api\"]Telegram API[/a] für Geschwindigkeit und Sicherheit.";
+"lng_about_text_2" = "Diese Software steht unter der [a href=\"https://github.com/stek29/tdesktop-plus/blob/master/LICENSE\"]GNU GPL[/a] Version 3, der Quelltext ist bei [a href=\"https://github.com/stek29/tdesktop-plus\"]GitHub[/a] verfügbar.";
 "lng_about_text_3" = "Fragen? Besuche doch {faq_open}unsere FAQ{faq_close} für mehr Infos.";
 "lng_about_done" = "Fertig";
 

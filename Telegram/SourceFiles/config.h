@@ -26,7 +26,8 @@ static const bool DevVersion = true;
 //#define BETA_VERSION (9034004ULL) // just comment this line to build public version
 
 static const wchar_t *AppNameOld = L"Telegram Win (Unofficial)";
-static const wchar_t *AppName = L"Telegram Desktop";
+static const wchar_t *AppNameOff = L"Telegram Desktop";
+static const wchar_t *AppName = L"TDesktop Plus (Unofficial)";
 
 static const wchar_t *AppId = L"{53F49750-6209-4FBF-9CA8-7A333C87D1ED}"; // used in updater.cpp and Setup.iss for Windows
 static const wchar_t *AppFile = L"Telegram";

@@ -137,7 +137,7 @@ Copyright (c) 2014-2016 John Preston, https://desktop.telegram.org
 "lng_pinned_unpin" = "Losmaken";
 "lng_pinned_notify" = "Leden informeren";
 
-"lng_intro" = "Welkom bij de officiële  [a href=\"https://telegram.org/\"]Telegram[/a] desktop-app.\n[b]Snel[/b] en [b]veilig[/b].";
+"lng_intro" = "Welkom bij de ONOFFICIËLE [a href=\"https://telegram.org/\"]Telegram[/a] desktop-app.\n[b]Snel[/b] en [b]veilig[/b].";
 "lng_start_msgs" = "BEGIN MET CHATTEN";
 
 "lng_intro_next" = "VOLGENDE";
@@ -854,8 +854,8 @@ Copyright (c) 2014-2016 John Preston, https://desktop.telegram.org
 "lng_box_leave" = "Verlaat";
 
 "lng_about_version" = "versie {version}";
-"lng_about_text_1" = "Officiële, gratis Telegram app gebaseerd op de [a href=\"https://core.telegram.org/api\"]Telegram API[/a] voor snelheid en veiligheid.";
-"lng_about_text_2" = "Deze software valt onder [a  href=\"https://github.com/telegramdesktop/tdesktop/blob/master/LICENSE\"]GNU GPL[/a] versie 3.\nDe broncode is beschikbaar via [a href=\"https://github.com/telegramdesktop/tdesktop\"]GitHub[/a].";
+"lng_about_text_1" = "ONOFFICIËLE, gratis Telegram app gebaseerd op de [a href=\"https://core.telegram.org/api\"]Telegram API[/a] voor snelheid en veiligheid.";
+"lng_about_text_2" = "Deze software valt onder [a  href=\"https://github.com/stek29/tdesktop-plus/blob/master/LICENSE\"]GNU GPL[/a] versie 3.\nDe broncode is beschikbaar via [a href=\"https://github.com/stek29/tdesktop-plus\"]GitHub[/a].";
 "lng_about_text_3" = "Bezoek de {faq_open}Telegram FAQ{faq_close} voor meer informatie.";
 "lng_about_done" = "Gereed";
 
