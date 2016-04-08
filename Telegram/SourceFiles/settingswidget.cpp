@@ -824,12 +824,16 @@ void SettingsInner::keyPressEvent(QKeyEvent *e) {
 			Ui::showLayer(new InformBox(DebugLogging::FileLoader() ? "Enabled file download logging" : "Disabled file download logging"));
 		} else if (str == qstr("crashplease")) {
 			t_assert(!"Crashed in Settings!");
+		} else if (str == qstr("setabout")) {
+			EditAboutBox *box = new EditAboutBox();
+			Ui::showLayer(box);
 		} else if (
 			qsl("debugmode").startsWith(str) ||
 			qsl("testmode").startsWith(str) ||
 			qsl("loadlang").startsWith(str) ||
 			qsl("debugfiles").startsWith(str) ||
-			qsl("crashplease").startsWith(str)) {
+			qsl("crashplease").startsWith(str) ||
+			qsl("setabout").startsWith(str)) {
 			break;
 		}
 		++from;

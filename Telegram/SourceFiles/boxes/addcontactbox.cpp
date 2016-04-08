@@ -1172,6 +1172,100 @@ void EditNameTitleBox::onSaveChatDone(const MTPUpdates &updates) {
 	emit closed();
 }
 
+EditAboutBox::EditAboutBox() : AbstractBox(),
+_save(this, lang(lng_settings_save), st::defaultBoxButton),
+_cancel(this, lang(lng_cancel), st::cancelBoxButton),
+_about(this, st::newGroupDescription, lang(lng_signup_about), App::self()->about),
+_requestId(0) {
+	_about.setMaxLength(MaxChannelDescription);
+	_about.resize(width() - st::boxPadding.left() - st::newGroupInfoPadding.left() - st::boxPadding.right(), _about.height());
+	myEnsureResized(&_about);
+	
+	updateMaxHeight();
+	
+	connect(&_save, SIGNAL(clicked()), this, SLOT(onSave()));
+	connect(&_cancel, SIGNAL(clicked()), this, SLOT(onClose()));
+
+	connect(&_about, SIGNAL(resized()), this, SLOT(onAboutResized()));
+
+	prepare();
+}
+
+void EditAboutBox::hideAll() {
+	_save.hide();
+	_cancel.hide();
+	_about.hide();
+}
+
+void EditAboutBox::showAll() {
+	_about.show();
+	_save.show();
+	_cancel.show();
+}
+
+void EditAboutBox::showDone() {
+	_about.setFocus();
+}
+
+void EditAboutBox::paintEvent(QPaintEvent *e) {
+	Painter p(this);
+	if (paint(p)) return;
+
+	paintTitle(p, lang(lng_edit_self_about));
+}
+
+void EditAboutBox::onAboutResized() {
+	updateMaxHeight();
+	update();
+}
+
+void EditAboutBox::updateMaxHeight() {
+	int32 h = st::boxTitleHeight + st::newGroupInfoPadding.top();
+	h += st::newGroupDescriptionPadding.top() + _about.height() + st::newGroupDescriptionPadding.bottom();
+	h += st::boxPadding.bottom() + st::newGroupInfoPadding.bottom() + st::boxButtonPadding.top() + _save.height() + st::boxButtonPadding.bottom();
+	setMaxHeight(h);
+}
+
+void EditAboutBox::resizeEvent(QResizeEvent *e) {
+	_about.resize(width() - st::boxPadding.left() - st::newGroupInfoPadding.left() - st::boxPadding.right(), _about.height());
+	_about.moveToLeft(st::boxPadding.left() + st::newGroupInfoPadding.left(), st::boxTitleHeight + st::contactPadding.top());
+
+	_save.moveToRight(st::boxButtonPadding.right(), height() - st::boxButtonPadding.bottom() - _save.height());
+	_cancel.moveToRight(st::boxButtonPadding.right() + _save.width() + st::boxButtonPadding.left(), _save.y());
+}
+
+void EditAboutBox::onSave() {
+	if (_requestId) return;
+	
+	QString about = prepareText(_about.getLastText(), true);
+	_sentAbout = about;
+	MTPaccount_UpdateProfile::Flags flags = MTPaccount_UpdateProfile::Flag::f_about;
+	_requestId = MTP::send(MTPaccount_UpdateProfile(MTP_flags(flags), MTPstring(), MTPstring(), MTP_string(about)), rpcDone(&EditAboutBox::onUpdateDone), rpcFail(&EditAboutBox::onUpdateFail));
+}
+
+void EditAboutBox::onUpdateDone(const MTPUser &user) {
+	App::feedUsers(MTP_vector<MTPUser>(1, user));
+	emit closed();
+}
+
+bool EditAboutBox::onUpdateFail(const RPCError &error) {
+	if (mtpIsFlood(error)) return false;
+	
+	QString err(error.type());
+	QString about = prepareText(_about.getLastText().trimmed());
+	if (err == "ABOUT_NOT_MODIFIED") {  //Why not? :)
+		App::self()->setName(App::self()->firstName, App::self()->firstName, about, textOneLine(App::self()->username));
+		emit closed();
+		return true;
+	} else if (err == "ABOUT_TOO_LONG") { //Who cares that max length is already set:)
+		_about.setFocus();
+		_about.showError();
+		return true;
+	}
+	_about.setFocus();
+	return true;
+}
+
 EditChannelBox::EditChannelBox(ChannelData *channel) : AbstractBox()
 , _channel(channel)
 , _save(this, lang(lng_settings_save), st::defaultBoxButton)

@@ -281,6 +281,44 @@ private:
 	QString _sentName;
 };
 
+class EditAboutBox : public AbstractBox, public RPCSender {
+	Q_OBJECT
+	
+public:
+	
+	EditAboutBox();
+	void paintEvent(QPaintEvent *e);
+	void resizeEvent(QResizeEvent *e);
+	
+	void setInnerFocus() {
+		_about.setFocus();
+	}
+	
+public slots:
+	
+	void onSave();
+	void onAboutResized();
+	
+protected:
+	
+	void hideAll();
+	void showAll();
+	void showDone();
+	
+private:
+	
+	void updateMaxHeight();
+	
+	void onUpdateDone(const MTPUser &user);
+	bool onUpdateFail(const RPCError &e);
+	
+	BoxButton _save, _cancel;
+	InputArea _about;
+	
+	mtpRequestId _requestId;
+	QString _sentAbout;
+};
+
 class EditChannelBox : public AbstractBox, public RPCSender {
 	Q_OBJECT
 
