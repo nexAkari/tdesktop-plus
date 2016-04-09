@@ -43,6 +43,7 @@ public:
 
 	void setScrollBottom(int32 bottom);
 	void install();
+	void remove();
 
 	~StickerSetInner();
 
@@ -54,6 +55,7 @@ signals:
 
 	void updateButtons();
 	void installed(uint64 id);
+	void removed();
 
 private:
 
@@ -63,7 +65,8 @@ private:
 	bool failedSet(const RPCError &error);
 
 	void installDone(const MTPBool &result);
-	bool installFailed(const RPCError &error);
+	bool updateStateFailed(const RPCError &error);
+	void removeDone(const MTPBool &result);
 
 	StickerPack _pack;
 	StickersByEmojiMap _emoji;
@@ -76,7 +79,7 @@ private:
 	int32 _bottom;
 	MTPInputStickerSet _input;
 
-	mtpRequestId _installRequest;
+	mtpRequestId _updateStateRequest;
 
 	QTimer _previewTimer;
 	int32 _previewShown;
@@ -98,6 +101,9 @@ public slots:
 	void onAddStickers();
 	void onShareStickers();
 	void onUpdateButtons();
+	void onRemove();
+	void onRemoveSure();
+	void onRemoved();
 
 	void onScroll();
 
@@ -114,7 +120,7 @@ private:
 
 	StickerSetInner _inner;
 	ScrollableBoxShadow _shadow;
-	BoxButton _add, _share, _cancel, _done;
+	BoxButton _add, _remove, _share, _cancel, _done;
 	QString _title;
 };
 
