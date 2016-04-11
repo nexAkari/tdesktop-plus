@@ -90,7 +90,7 @@ class StickerSetBox : public ScrollableBox, public RPCSender {
 
 public:
 
-	StickerSetBox(const MTPInputStickerSet &set);
+	StickerSetBox(const MTPInputStickerSet &set, bool showRemove = true);
 
 	void paintEvent(QPaintEvent *e);
 	void resizeEvent(QResizeEvent *e);
@@ -122,6 +122,8 @@ private:
 	ScrollableBoxShadow _shadow;
 	BoxButton _add, _remove, _share, _cancel, _done;
 	QString _title;
+	
+	bool _showRemove;
 };
 
 class StickersInner : public TWidget {
@@ -165,6 +167,7 @@ private:
 	void paintRow(Painter &p, int32 index);
 	void clear();
 	void setRemoveSel(int32 removeSel);
+	void setShowSel(int32 showSel);
 	float64 aboveShadowOpacity() const;
 
 	int32 _rowHeight;
@@ -199,6 +202,7 @@ private:
 	bool _saving;
 
 	int32 _removeSel, _removeDown, _removeWidth, _returnWidth, _restoreWidth;
+	int32 _showSel, _showDown;
 
 	QPoint _mouse;
 	int32 _selected;
