@@ -144,6 +144,8 @@ public slots:
 	void onViewEmojis();
 	void onStickers();
 
+	void onDropdownOnTab();
+
 	void onEnterSend();
 	void onCtrlEnterSend();
 
@@ -254,6 +256,7 @@ private:
 	// chat options
 	FlatCheckbox _replaceEmojis;
 	LinkButton _viewEmojis, _stickers;
+	FlatCheckbox _dropdownOnTab;
 	FlatRadiobutton _enterSend, _ctrlEnterSend;
 	FlatCheckbox _dontAskDownloadPath;
 	int32 _downloadPathWidth;

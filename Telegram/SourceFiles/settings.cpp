@@ -74,6 +74,7 @@ bool gNoStartUpdate = false;
 bool gStartToSettings = false;
 DBIDefaultAttach gDefaultAttach = dbidaDocument;
 bool gReplaceEmojis = true;
+bool gDropdownOnTab = false;
 bool gAskDownloadPath = false;
 QString gDownloadPath;
 QByteArray gDownloadPathBookmark;

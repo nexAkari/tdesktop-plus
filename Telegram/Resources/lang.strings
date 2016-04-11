@@ -266,6 +266,7 @@ Copyright (c) 2014-2016 John Preston, https://desktop.telegram.org
 "lng_settings_replace_emojis" = "Replace emoji";
 "lng_settings_view_emojis" = "View list";
 "lng_settings_emoji_list" = "Supported emoji";
+"lng_settings_dropdown_on_tab" = "Show Emoji Panel on Tab";
 "lng_settings_send_enter" = "Send by Enter";
 "lng_settings_send_ctrlenter" = "Send by Ctrl+Enter";
 "lng_settings_send_cmdenter" = "Send by Cmd+Enter";

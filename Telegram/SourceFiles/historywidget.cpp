@@ -6817,6 +6817,12 @@ void HistoryWidget::onFieldTabbed() {
 	QString sel = _attachMention.isHidden() ? QString() : _attachMention.getSelected();
 	if (!sel.isEmpty()) {
 		_field.onMentionHashtagOrBotCommandInsert(sel);
+	} else if (cDropdownOnTab()) {
+		if (_emojiPan.isHidden() || _emojiPan.hiding()) {
+			_emojiPan.showStart();
+		} else {
+			_emojiPan.hideStart();
+		}
 	}
 }
 
