@@ -714,7 +714,8 @@ public slots:
 	void onPinMessage();
 	void onUnpinMessage();
 	void onUnpinMessageSure();
-	void onPinnedHide();
+	void onPinnedHide(bool ignoreAdmin = false);
+	void onPinnedHideForce();
 	void onCopyPostLink();
 	void onFieldBarCancel();
 
@@ -844,6 +845,7 @@ private:
 		MsgId msgId = 0;
 		HistoryItem *msg = nullptr;
 		Text text;
+		FlatButton hide;
 		IconedButton cancel;
 		PlainShadow shadow;
 	};

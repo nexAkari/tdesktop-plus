@@ -3982,6 +3982,7 @@ void HistoryWidget::updateControlsVisibility() {
 		if (_pinnedBar) {
 			_pinnedBar->cancel.hide();
 			_pinnedBar->shadow.hide();
+			_pinnedBar->hide.hide();
 		}
 		return;
 	}
@@ -3990,6 +3991,9 @@ void HistoryWidget::updateControlsVisibility() {
 	if (_pinnedBar) {
 		_pinnedBar->cancel.show();
 		_pinnedBar->shadow.show();
+		if (_peer->asChannel()->amCreator() || _peer->asChannel()->amEditor()) {
+			_pinnedBar->hide.show();
+		}
 	}
 	if (_firstLoadRequest && !_scroll.isHidden()) {
 		_scroll.hide();
@@ -5014,6 +5018,7 @@ void HistoryWidget::animShow(const QPixmap &bgAnimCache, const QPixmap &bgAnimTo
 	if (_pinnedBar) {
 		_pinnedBar->shadow.hide();
 		_pinnedBar->cancel.hide();
+		_pinnedBar->hide.hide();
 	}
 
 	a_coordUnder = back ? anim::ivalue(-qFloor(st::slideShift * width()), 0) : anim::ivalue(0, -qFloor(st::slideShift * width()));
@@ -6430,6 +6435,7 @@ void HistoryWidget::resizeEvent(QResizeEvent *e) {
 			_attachMention.setBoundings(_scroll.geometry());
 		}
 		_pinnedBar->cancel.move(width() - _pinnedBar->cancel.width(), 0);
+		_pinnedBar->hide.move(_pinnedBar->cancel.x() - _pinnedBar->hide.width(), 0);
 		_pinnedBar->shadow.setGeometry(0, st::replyHeight, width(), st::lineWidth);
 	} else if (_scroll.y() != 0) {
 		_scroll.move(0, 0);
@@ -7000,6 +7006,7 @@ void HistoryWidget::onInlineResultSend(InlineBots::Result *result, UserData *bot
 HistoryWidget::PinnedBar::PinnedBar(MsgId msgId, HistoryWidget *parent)
 : msgId(msgId)
 , msg(0)
+, hide(parent, lang(lng_report_spam_hide), st::reportSpamHide)
 , cancel(parent, st::replyCancel)
 , shadow(parent, st::shadowColor) {
 }
@@ -7034,7 +7041,7 @@ void HistoryWidget::updatePinnedBar(bool force) {
 bool HistoryWidget::pinnedMsgVisibilityUpdated() {
 	bool result = false;
 	MsgId pinnedMsgId = (_peer && _peer->isMegagroup()) ? _peer->asChannel()->mgInfo->pinnedMsgId : 0;
-	if (pinnedMsgId && !_peer->asChannel()->amCreator() && !_peer->asChannel()->amEditor()) {
+	if (pinnedMsgId /*&& !_peer->asChannel()->amCreator() && !_peer->asChannel()->amEditor()*/) {
 		Global::HiddenPinnedMessagesMap::const_iterator it = Global::HiddenPinnedMessages().constFind(_peer->id);
 		if (it != Global::HiddenPinnedMessages().cend()) {
 			if (it.value() == pinnedMsgId) {
@@ -7051,11 +7058,18 @@ bool HistoryWidget::pinnedMsgVisibilityUpdated() {
 			if (_a_show.animating()) {
 				_pinnedBar->cancel.hide();
 				_pinnedBar->shadow.hide();
+				_pinnedBar->hide.hide();
 			} else {
 				_pinnedBar->cancel.show();
 				_pinnedBar->shadow.show();
+				if (_peer->asChannel()->amCreator() || _peer->asChannel()->amEditor()) {
+					_pinnedBar->hide.show();
+				} else {
+					_pinnedBar->hide.hide();
+				}
 			}
 			connect(&_pinnedBar->cancel, SIGNAL(clicked()), this, SLOT(onPinnedHide()));
+			connect(&_pinnedBar->hide, SIGNAL(clicked()), this, SLOT(onPinnedHideForce()));
 			_reportSpamPanel.raise();
 			_sideShadow.raise();
 			_topShadow.raise();
@@ -7357,7 +7371,7 @@ void HistoryWidget::unpinDone(const MTPUpdates &updates) {
 	}
 }
 
-void HistoryWidget::onPinnedHide() {
+void HistoryWidget::onPinnedHide(bool ignoreAdmin) {
 	if (!_peer || !_peer->isMegagroup()) return;
 	if (!_peer->asChannel()->mgInfo->pinnedMsgId) {
 		if (pinnedMsgVisibilityUpdated()) {
@@ -7367,7 +7381,7 @@ void HistoryWidget::onPinnedHide() {
 		return;
 	}
 
-	if (_peer->asChannel()->amCreator() || _peer->asChannel()->amEditor()) {
+	if (!ignoreAdmin && (_peer->asChannel()->amCreator() || _peer->asChannel()->amEditor())) {
 		onUnpinMessage();
 	} else {
 		Global::RefHiddenPinnedMessages().insert(_peer->id, _peer->asChannel()->mgInfo->pinnedMsgId);
@@ -7377,6 +7391,10 @@ void HistoryWidget::onPinnedHide() {
 			update();
 		}
 	}
+}
+
+void HistoryWidget::onPinnedHideForce() {
+	onPinnedHide(true);
 }
 
 void HistoryWidget::onCopyPostLink() {
@@ -8049,11 +8067,11 @@ void HistoryWidget::drawPinnedBar(Painter &p) {
 		p.drawText(left, st::msgReplyPadding.top() + st::msgServiceNameFont->ascent, lang(lng_pinned_message));
 
 		p.setPen((((_pinnedBar->msg->toHistoryMessage() && _pinnedBar->msg->toHistoryMessage()->emptyText()) || _pinnedBar->msg->serviceMsg()) ? st::msgInDateFg : st::msgColor)->p);
-		_pinnedBar->text.drawElided(p, left, st::msgReplyPadding.top() + st::msgServiceNameFont->height, width() - left -_fieldBarCancel.width() - st::msgReplyPadding.right());
+		_pinnedBar->text.drawElided(p, left, st::msgReplyPadding.top() + st::msgServiceNameFont->height, width() - left - (!_pinnedBar->hide.isHidden() ? _pinnedBar->hide.width() : 0) - _pinnedBar->cancel.width() - st::msgReplyPadding.right());
 	} else {
 		p.setFont(st::msgDateFont);
 		p.setPen(st::msgInDateFg);
-		p.drawText(left, st::msgReplyPadding.top() + (st::msgReplyBarSize.height() - st::msgDateFont->height) / 2 + st::msgDateFont->ascent, st::msgDateFont->elided(lang(lng_profile_loading), width() - left - _pinnedBar->cancel.width() - st::msgReplyPadding.right()));
+		p.drawText(left, st::msgReplyPadding.top() + (st::msgReplyBarSize.height() - st::msgDateFont->height) / 2 + st::msgDateFont->ascent, st::msgDateFont->elided(lang(lng_profile_loading), width() - left - (!_pinnedBar->hide.isHidden() ? _pinnedBar->hide.width() : 0) - _pinnedBar->cancel.width() - st::msgReplyPadding.right()));
 	}
 }
 

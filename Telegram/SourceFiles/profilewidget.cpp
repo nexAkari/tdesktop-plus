@@ -1822,7 +1822,7 @@ void ProfileInner::updateInvitationLink() {
 }
 
 void ProfileInner::updatePinnedMessageVisibility() {
-	if (_peerChannel && _peerChannel->isMegagroup() && _peerChannel->mgInfo->pinnedMsgId && !_amCreator && !_peerChannel->amEditor()) {
+	if (_peerChannel && _peerChannel->isMegagroup() && _peerChannel->mgInfo->pinnedMsgId /*&& !_amCreator && !_peerChannel->amEditor()*/) {
 		_pinnedMessage.show();
 	} else {
 		_pinnedMessage.hide();
