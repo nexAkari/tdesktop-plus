@@ -79,8 +79,6 @@ bool gAskDownloadPath = false;
 QString gDownloadPath;
 QByteArray gDownloadPathBookmark;
 
-bool gNeedConfigResave = false;
-
 bool gCtrlEnter = false;
 
 QPixmapPointer gChatBackground = 0;

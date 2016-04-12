@@ -20,7 +20,7 @@ Copyright (c) 2014-2016 John Preston, https://desktop.telegram.org
 */
 #include "stdafx.h"
 #include "application.h"
-#include "style.h"
+#include "ui/style.h"
 
 #include "shortcuts.h"
 
@@ -690,7 +690,7 @@ AppClass::AppClass() : QObject()
 			cSetLang(languageDefault);
 		}
 	} else if (cLang() > languageDefault && cLang() < languageCount) {
-		LangLoaderPlain loader(qsl(":/langs/lang_") + LanguageCodes[cLang()] + qsl(".strings"));
+		LangLoaderPlain loader(qsl(":/langs/lang_") + LanguageCodes[cLang()].c_str() + qsl(".strings"));
 		if (!loader.errors().isEmpty()) {
 			LOG(("Lang load errors: %1").arg(loader.errors()));
 		} else if (!loader.warnings().isEmpty()) {
@@ -835,7 +835,7 @@ void AppClass::chatPhotoCleared(PeerId peer, const MTPUpdates &updates) {
 
 void AppClass::selfPhotoDone(const MTPphotos_Photo &result) {
 	if (!App::self()) return;
-	const MTPDphotos_photo &photo(result.c_photos_photo());
+	const auto &photo(result.c_photos_photo());
 	App::feedPhoto(photo.vphoto);
 	App::feedUsers(photo.vusers);
 	cancelPhotoUpdate(App::self()->id);
@@ -851,7 +851,7 @@ void AppClass::chatPhotoDone(PeerId peer, const MTPUpdates &updates) {
 }
 
 bool AppClass::peerPhotoFail(PeerId peer, const RPCError &error) {
-	if (mtpIsFlood(error)) return false;
+	if (MTP::isDefaultHandledError(error)) return false;
 
 	LOG(("Application Error: update photo failed %1: %2").arg(error.type()).arg(error.description()));
 	cancelPhotoUpdate(peer);
@@ -962,6 +962,15 @@ void AppClass::onSwitchDebugMode() {
 	}
 }
 
+void AppClass::onSwitchWorkMode() {
+	Global::SetDialogsModeEnabled(!Global::DialogsModeEnabled());
+	Global::SetDialogsMode(Dialogs::Mode::All);
+	Local::writeUserSettings();
+	cSetRestarting(true);
+	cSetRestartingToSettings(true);
+	App::quit();
+}
+
 void AppClass::onSwitchTestMode() {
 	if (cTestMode()) {
 		QFile(cWorkingDir() + qsl("tdata/withtestmode")).remove();
@@ -1025,10 +1034,10 @@ void AppClass::checkMapVersion() {
     if (Local::oldMapVersion() < AppVersion) {
 		if (Local::oldMapVersion()) {
 			QString versionFeatures;
-			if ((cDevVersion() || cBetaVersion()) && Local::oldMapVersion() < 9040) {
+			if ((cDevVersion() || cBetaVersion()) && Local::oldMapVersion() < 9041) {
 //				versionFeatures = QString::fromUtf8("\xe2\x80\x94 Design improvements\n\xe2\x80\x94 Bug fixes and other minor improvements");
 				versionFeatures = langNewVersionText();
-			} else if (Local::oldMapVersion() < 9040) {
+			} else if (Local::oldMapVersion() < 9041) {
 				versionFeatures = langNewVersionText();
 			} else {
 				versionFeatures = lang(lng_new_version_minor).trimmed();
@@ -1038,9 +1047,6 @@ void AppClass::checkMapVersion() {
 				_window->serviceNotification(versionFeatures);
 			}
 		}
-	}
-	if (cNeedConfigResave()) {
-		Local::writeUserSettings();
 	}
 }
 
