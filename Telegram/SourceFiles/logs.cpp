@@ -768,9 +768,24 @@ namespace internal {
 
 		if (!ReportingHeaderWritten) {
 			ReportingHeaderWritten = true;
+			auto dec2hex = [](int value) -> char {
+				if (value >= 0 && value < 10) {
+					return '0' + value;
+				} else if (value >= 10 && value < 16) {
+					return 'a' + (value - 10);
+				}
+				return '#';
+			};
 
 			for (const auto &i : ProcessAnnotationRefs) {
-				ProcessAnnotations[i.first] = i.second->toUtf8().constData();
+				QByteArray utf8 = i.second->toUtf8();
+				std::string wrapped;
+				wrapped.reserve(4 * utf8.size());
+				for (auto ch : utf8) {
+					auto uch = static_cast<uchar>(ch);
+					wrapped.append("\\x", 2).append(1, dec2hex(uch >> 4)).append(1, dec2hex(uch & 0x0F));
+				}
+				ProcessAnnotations[i.first] = wrapped;
 			}
 
 			const Annotations c_ProcessAnnotations(ProcessAnnotations);
@@ -1080,18 +1095,18 @@ namespace internal {
 	}
 
 	void setCrashAnnotation(const std::string &key, const QString &value) {
-		if (value.trimmed().isEmpty()) {
-			internal::ProcessAnnotations.erase(key);
-		} else {
+		if (!value.trimmed().isEmpty()) {
 			internal::ProcessAnnotations[key] = value.toUtf8().constData();
+		} else {
+			internal::ProcessAnnotations.erase(key);
 		}
 	}
 
 	void setCrashAnnotationRef(const std::string &key, const QString *valuePtr) {
 		if (valuePtr) {
-			internal::ProcessAnnotationRefs.erase(key);
-		} else {
 			internal::ProcessAnnotationRefs[key] = valuePtr;
+		} else {
+			internal::ProcessAnnotationRefs.erase(key);
 		}
 	}
 
