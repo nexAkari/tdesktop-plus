@@ -173,7 +173,7 @@ ImagePtr PeerData::currentUserpic() const {
 }
 
 void PeerData::paintUserpic(Painter &p, int size, int x, int y) const {
-	p.drawPixmap(x, y, currentUserpic()->pixCircled(size, size));
+	p.drawPixmap(x, y, genUserpic(size));
 }
 
 StorageKey PeerData::userpicUniqueKey() const {
@@ -188,7 +188,10 @@ void PeerData::saveUserpic(const QString &path) const {
 }
 
 QPixmap PeerData::genUserpic(int size) const {
-	return currentUserpic()->pixCircled(size, size);
+    if(cRoundedUserpics())
+        return currentUserpic()->pixCircled(size, size);
+    else
+        return currentUserpic()->pix(size, size);
 }
 
 const Text &BotCommand::descriptionText() const {

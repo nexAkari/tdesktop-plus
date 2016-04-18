@@ -55,6 +55,7 @@ bool gStartMinimized = false;
 bool gStartInTray = false;
 bool gAutoStart = false;
 bool gSendToMenu = false;
+bool gRoundedUserpics = true;
 bool gAutoUpdate = true;
 TWindowPos gWindowPos;
 LaunchMode gLaunchMode = LaunchModeNormal;

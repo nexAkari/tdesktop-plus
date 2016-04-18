@@ -77,6 +77,7 @@ enum LaunchMode {
 	LaunchModeShowCrash,
 };
 DeclareReadSetting(LaunchMode, LaunchMode);
+DeclareSetting(bool, RoundedUserpics)
 DeclareSetting(QString, WorkingDir);
 inline void cForceWorkingDir(const QString &newDir) {
 	cSetWorkingDir(newDir);
