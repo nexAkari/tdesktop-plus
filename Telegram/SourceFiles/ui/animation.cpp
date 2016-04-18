@@ -614,7 +614,7 @@ public:
 			if (_avpkt.size > 0) { // previous packet not finished
 				res = 0;
 			} else if ((res = av_read_frame(_fmtContext, &_avpkt)) < 0) {
-				if (res != AVERROR_EOF || !_hadFrame) {
+				if (res != AVERROR_EOF) {
 					char err[AV_ERROR_MAX_STRING_SIZE] = { 0 };
 					LOG(("Gif Error: Unable to av_read_frame() %1, error %2, %3").arg(logData()).arg(res).arg(av_make_error_string(err, sizeof(err), res)));
 					return false;
