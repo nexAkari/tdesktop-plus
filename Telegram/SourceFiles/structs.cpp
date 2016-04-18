@@ -188,10 +188,10 @@ void PeerData::saveUserpic(const QString &path) const {
 }
 
 QPixmap PeerData::genUserpic(int size) const {
-    if(cRoundedUserpics())
-        return currentUserpic()->pixCircled(size, size);
-    else
-        return currentUserpic()->pix(size, size);
+	if (cRoundedUserpics())
+		return currentUserpic()->pixCircled(size, size);
+	else
+		return currentUserpic()->pix(size, size);
 }
 
 const Text &BotCommand::descriptionText() const {

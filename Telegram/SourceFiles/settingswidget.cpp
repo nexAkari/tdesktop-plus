@@ -264,7 +264,7 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 	connect(&_startMinimized, SIGNAL(changed()), this, SLOT(onStartMinimized()));
 	connect(&_sendToMenu, SIGNAL(changed()), this, SLOT(onSendToMenu()));
 
-    connect(&_roundedUserpics, SIGNAL(changed()), this, SLOT(onRoundedUserpics()));
+	connect(&_roundedUserpics, SIGNAL(changed()), this, SLOT(onRoundedUserpics()));
 
 	connect(&_dpiAutoScale, SIGNAL(changed()), this, SLOT(onScaleAuto()));
 	connect(&_dpiSlider, SIGNAL(changed(int32)), this, SLOT(onScaleChange()));
@@ -501,7 +501,7 @@ void SettingsInner::paintEvent(QPaintEvent *e) {
 		top += _workmodeTray.height() + st::setLittleSkip;
 	}
 
-    top += _roundedUserpics.height();
+	top += _roundedUserpics.height();
 
     if (!cRetina()) {
         p.setFont(st::setHeaderFont->f);
@@ -724,7 +724,7 @@ void SettingsInner::resizeEvent(QResizeEvent *e) {
 		_workmodeTray.move(_left, top); top += _workmodeTray.height() + st::setLittleSkip;
 	}
 
-    _roundedUserpics.move(_left, top); top += _roundedUserpics.height();
+	_roundedUserpics.move(_left, top); top += _roundedUserpics.height();
 
     if (!cRetina()) {
         top += st::setHeaderSkip;
@@ -1089,7 +1089,7 @@ void SettingsInner::showAll() {
 		_sendToMenu.hide();
 	}
 
-    _roundedUserpics.show();
+	_roundedUserpics.show();
 
     if (cRetina()) {
         _dpiSlider.hide();
@@ -1472,8 +1472,8 @@ void SettingsInner::onSendToMenu() {
 }
 
 void SettingsInner::onRoundedUserpics() {
-    cSetRoundedUserpics(_roundedUserpics.checked());
-    Local::writeSettings();
+	cSetRoundedUserpics(_roundedUserpics.checked());
+	Local::writeSettings();
 }
 
 void SettingsInner::onScaleAuto() {
