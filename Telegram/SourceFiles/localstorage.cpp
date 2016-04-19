@@ -610,7 +610,7 @@ namespace {
 		dbiEncrypted            = 444,
 
 		// 500-600 reserved in Official TDesktop and used for Plus
-		dbiDropdownOnTab = 500,
+		dbiDropdownOnTab        = 500,
 
 		dbiVersion              = 666,
 	};
@@ -1375,7 +1375,7 @@ namespace {
 			if (!_checkStreamStatus(stream)) return false;
 
 			cSetDropdownOnTab(v == 1);
-		}
+		} break;
 
 		default:
 			LOG(("App Error: unknown blockId in _readSetting: %1").arg(blockId));
