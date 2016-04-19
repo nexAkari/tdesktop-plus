@@ -612,6 +612,7 @@ namespace {
 
 		// 500-600 reserved in Official TDesktop and used for Plus
 		dbiDropdownOnTab        = 500,
+		dbiRoundedUserpics      = 501,
 
 		dbiVersion              = 666,
 	};
@@ -1378,6 +1379,15 @@ namespace {
 			cSetDropdownOnTab(v == 1);
 		} break;
 
+		case dbiRoundedUserpics: {
+			qint32 v;
+			stream >> v;
+			if (!_checkStreamStatus(stream)) return false;
+
+			cSetRoundedUserpics(v == 1);
+		} break;
+
+
 		default:
 			LOG(("App Error: unknown blockId in _readSetting: %1").arg(blockId));
 			return false;
@@ -1660,6 +1670,7 @@ namespace {
 
 		// Plus Settings
 		data.stream << quint32(dbiDropdownOnTab) << quint32(cDropdownOnTab() ? 1 : 0);
+		data.stream << quint32(dbiRoundedUserpics) << qint32(cRoundedUserpics() ? 1 : 0);
 
 		FileWriteDescriptor file(_userSettingsKey);
 		file.writeEncrypted(data);
