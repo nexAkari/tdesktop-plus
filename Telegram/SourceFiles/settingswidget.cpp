@@ -150,6 +150,8 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 , _startMinimized(this, lang(lng_settings_start_min), cStartMinimized())
 , _sendToMenu(this, lang(lng_settings_add_sendto), cSendToMenu())
 
+, _roundedUserpics(this, lang(lng_settings_rounded_userpics), cRoundedUserpics())
+
 , _dpiAutoScale(this, lng_settings_scale_auto(lt_cur, scaleLabel(cScreenScale())), (cConfigScale() == dbisAuto))
 , _dpiSlider(this, st::dpiSlider, dbisScaleCount - 1, cEvalScale(cConfigScale()) - 1)
 , _dpiWidth1(st::dpiFont1->width(scaleLabel(dbisOne)))
@@ -262,6 +264,8 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 	connect(&_autoStart, SIGNAL(changed()), this, SLOT(onAutoStart()));
 	connect(&_startMinimized, SIGNAL(changed()), this, SLOT(onStartMinimized()));
 	connect(&_sendToMenu, SIGNAL(changed()), this, SLOT(onSendToMenu()));
+
+	connect(&_roundedUserpics, SIGNAL(changed()), this, SLOT(onRoundedUserpics()));
 
 	connect(&_dpiAutoScale, SIGNAL(changed()), this, SLOT(onScaleAuto()));
 	connect(&_dpiSlider, SIGNAL(changed(int32)), this, SLOT(onScaleChange()));
@@ -494,10 +498,12 @@ void SettingsInner::paintEvent(QPaintEvent *e) {
         top += _autoStart.height() + st::setLittleSkip;
         top += _startMinimized.height() + st::setSectionSkip;
 
-		top += _sendToMenu.height();
+		top += _sendToMenu.height() + st::setLittleSkip;
     } else if (_supportTray) {
-		top += _workmodeTray.height();
+		top += _workmodeTray.height() + st::setLittleSkip;
 	}
+
+	top += _roundedUserpics.height();
 
     if (!cRetina()) {
         p.setFont(st::setHeaderFont->f);
@@ -716,10 +722,13 @@ void SettingsInner::resizeEvent(QResizeEvent *e) {
         _autoStart.move(_left, top); top += _autoStart.height() + st::setLittleSkip;
         _startMinimized.move(_left, top); top += _startMinimized.height() + st::setSectionSkip;
 
-		_sendToMenu.move(_left, top); top += _sendToMenu.height();
+		_sendToMenu.move(_left, top); top += _sendToMenu.height() + st::setLittleSkip;
     } else if (_supportTray) {
-		_workmodeTray.move(_left, top); top += _workmodeTray.height();
+		_workmodeTray.move(_left, top); top += _workmodeTray.height() + st::setLittleSkip;
 	}
+
+	_roundedUserpics.move(_left, top); top += _roundedUserpics.height();
+
     if (!cRetina()) {
         top += st::setHeaderSkip;
         _dpiAutoScale.move(_left, top); top += _dpiAutoScale.height() + st::setLittleSkip;
@@ -1086,6 +1095,9 @@ void SettingsInner::showAll() {
 
 		_sendToMenu.hide();
 	}
+
+	_roundedUserpics.show();
+
     if (cRetina()) {
         _dpiSlider.hide();
         _dpiAutoScale.hide();
@@ -1466,6 +1478,11 @@ void SettingsInner::onStartMinimized() {
 void SettingsInner::onSendToMenu() {
 	cSetSendToMenu(_sendToMenu.checked());
 	psSendToMenu(_sendToMenu.checked());
+	Local::writeSettings();
+}
+
+void SettingsInner::onRoundedUserpics() {
+	cSetRoundedUserpics(_roundedUserpics.checked());
 	Local::writeSettings();
 }
 

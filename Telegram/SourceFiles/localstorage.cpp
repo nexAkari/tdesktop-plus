@@ -612,6 +612,7 @@ namespace {
 
 		// 500-600 reserved in Official TDesktop and used for Plus
 		dbiDropdownOnTab        = 500,
+		dbiRoundedUserpics      = 501,
 
 		dbiVersion              = 666,
 	};
@@ -1377,6 +1378,15 @@ namespace {
 
 			cSetDropdownOnTab(v == 1);
 		} break;
+
+		case dbiRoundedUserpics: {
+			qint32 v;
+			stream >> v;
+			if (!_checkStreamStatus(stream)) return false;
+
+			cSetRoundedUserpics(v == 1);
+		} break;
+
 
 		default:
 			LOG(("App Error: unknown blockId in _readSetting: %1").arg(blockId));
@@ -2259,6 +2269,7 @@ namespace Local {
 		data.stream << quint32(dbiLastUpdateCheck) << qint32(cLastUpdateCheck());
 		data.stream << quint32(dbiScale) << qint32(cConfigScale());
 		data.stream << quint32(dbiLang) << qint32(cLang());
+		data.stream << quint32(dbiRoundedUserpics) << qint32(cRoundedUserpics());
 		for (auto i = dcOpts.cbegin(), e = dcOpts.cend(); i != e; ++i) {
 			data.stream << quint32(dbiDcOption) << quint32(i.key());
 			data.stream << qint32(i->flags) << QString::fromUtf8(i->ip.data(), i->ip.size());
