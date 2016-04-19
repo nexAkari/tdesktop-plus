@@ -161,6 +161,7 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 , _replaceEmojis(this, lang(lng_settings_replace_emojis), cReplaceEmojis())
 , _viewEmojis(this, lang(lng_settings_view_emojis))
 , _stickers(this, lang(lng_stickers_you_have))
+, _dropdownOnTab(this, lang(lng_settings_dropdown_on_tab), cDropdownOnTab())
 
 , _enterSend(this, qsl("send_key"), 0, lang(lng_settings_send_enter), !cCtrlEnter())
 , _ctrlEnterSend(this, qsl("send_key"), 1, lang((cPlatform() == dbipMac || cPlatform() == dbipMacOld) ? lng_settings_send_cmdenter : lng_settings_send_ctrlenter), cCtrlEnter())
@@ -282,6 +283,7 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 	connect(&_replaceEmojis, SIGNAL(changed()), this, SLOT(onReplaceEmojis()));
 	connect(&_viewEmojis, SIGNAL(clicked()), this, SLOT(onViewEmojis()));
 	connect(&_stickers, SIGNAL(clicked()), this, SLOT(onStickers()));
+	connect(&_dropdownOnTab, SIGNAL(changed()), this, SLOT(onDropdownOnTab()));
 
 	connect(&_enterSend, SIGNAL(changed()), this, SLOT(onEnterSend()));
 	connect(&_ctrlEnterSend, SIGNAL(changed()), this, SLOT(onCtrlEnterSend()));
@@ -534,6 +536,7 @@ void SettingsInner::paintEvent(QPaintEvent *e) {
 		top += _stickers.height() + st::setSectionSkip;
 		top += _enterSend.height() + st::setLittleSkip;
 		top += _ctrlEnterSend.height() + st::setSectionSkip;
+		top += _dropdownOnTab.height() + st::setLittleSkip;
 
 		top += _dontAskDownloadPath.height();
 		if (!cAskDownloadPath()) {
@@ -728,7 +731,9 @@ void SettingsInner::resizeEvent(QResizeEvent *e) {
 		top += st::setHeaderSkip;
 		_viewEmojis.move(_left + st::setWidth - _viewEmojis.width(), top + st::cbDefFlat.textTop);
 		_replaceEmojis.move(_left, top); top += _replaceEmojis.height() + st::setLittleSkip;
-		_stickers.move(_left + st::cbDefFlat.textLeft, top); top += _stickers.height() + st::setSectionSkip;
+		_stickers.move(_left + st::cbDefFlat.textLeft, top); top += _stickers.height() + st::setLittleSkip;
+		_dropdownOnTab.move(_left, top + st::cbDefFlat.textTop); top += _dropdownOnTab.height() + st::setSectionSkip;
+
 		_enterSend.move(_left, top); top += _enterSend.height() + st::setLittleSkip;
 		_ctrlEnterSend.move(_left, top); top += _ctrlEnterSend.height() + st::setSectionSkip;
 		_dontAskDownloadPath.move(_left, top); top += _dontAskDownloadPath.height();
@@ -828,6 +833,8 @@ void SettingsInner::keyPressEvent(QKeyEvent *e) {
 		} else if (str == qstr("setabout")) {
 			EditAboutBox *box = new EditAboutBox();
 			Ui::showLayer(box);
+			from = size;
+			break;
 		} else if (str == qstr("workmode")) {
 			QString text = Global::DialogsModeEnabled() ? qsl("Disable work mode?") : qsl("Enable work mode?");
 			auto box = std_::make_unique<ConfirmBox>(text);
@@ -840,9 +847,9 @@ void SettingsInner::keyPressEvent(QKeyEvent *e) {
 			qsl("testmode").startsWith(str) ||
 			qsl("loadlang").startsWith(str) ||
 			qsl("debugfiles").startsWith(str) ||
-			qsl("crashplease").startsWith(str) ||
 			qsl("setabout").startsWith(str) ||
-			qsl("workmode").startsWith(str)) {
+			qsl("workmode").startsWith(str) ||
+			qsl("crashplease").startsWith(str)) {
 			break;
 		}
 		++from;
@@ -1096,6 +1103,8 @@ void SettingsInner::showAll() {
 			_viewEmojis.hide();
 		}
 		_stickers.show();
+		_dropdownOnTab.show();
+
 		_enterSend.show();
 		_ctrlEnterSend.show();
 		_dontAskDownloadPath.show();
@@ -1115,6 +1124,7 @@ void SettingsInner::showAll() {
 		_replaceEmojis.hide();
 		_viewEmojis.hide();
 		_stickers.hide();
+		_dropdownOnTab.hide();
 		_enterSend.hide();
 		_ctrlEnterSend.hide();
 		_dontAskDownloadPath.hide();
@@ -1596,6 +1606,11 @@ void SettingsInner::onViewEmojis() {
 
 void SettingsInner::onStickers() {
 	Ui::showLayer(new StickersBox());
+}
+
+void SettingsInner::onDropdownOnTab() {
+	cSetDropdownOnTab(_dropdownOnTab.checked());
+	Local::writeUserSettings();
 }
 
 void SettingsInner::onEnterSend() {

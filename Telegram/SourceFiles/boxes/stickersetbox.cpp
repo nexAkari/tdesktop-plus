@@ -38,7 +38,7 @@ StickerSetInner::StickerSetInner(const MTPInputStickerSet &set) : TWidget()
 , _setFlags(0)
 , _bottom(0)
 , _input(set)
-, _installRequest(0)
+, _updateStateRequest(0)
 , _previewShown(-1) {
 	connect(App::wnd(), SIGNAL(imageLoaded()), this, SLOT(update()));
 	switch (set.type()) {
@@ -151,7 +151,31 @@ void StickerSetInner::installDone(const MTPBool &result) {
 	Ui::hideLayer();
 }
 
-bool StickerSetInner::installFailed(const RPCError &error) {
+void StickerSetInner::removeDone(const MTPBool &result) {
+	Ui::hideLayer();
+	auto it = Global::RefStickerSets().find(_setId);
+	if (it != Global::RefStickerSets().cend() && !(it->flags & MTPDstickerSet::Flag::f_official)) {
+		bool writeRecent = false;
+		RecentStickerPack &recent(cGetRecentStickers());
+		for (RecentStickerPack::iterator i = recent.begin(); i != recent.cend();) {
+			if (it->stickers.indexOf(i->first) >= 0) {
+				i = recent.erase(i);
+				writeRecent = true;
+			} else {
+				++i;
+			}
+		}
+		Global::RefStickerSets().erase(it);
+		int removeIndex = Global::StickerSetsOrder().indexOf(_setId);
+		if (removeIndex >= 0) Global::RefStickerSetsOrder().removeAt(removeIndex);
+		Local::writeStickers();
+		if (writeRecent) Local::writeUserSettings();
+	}
+	
+	emit removed();
+}
+
+bool StickerSetInner::updateStateFailed(const RPCError &error) {
 	if (MTP::isDefaultHandledError(error)) return false;
 
 	Ui::showLayer(new InformBox(lang(lng_stickers_not_found)));
@@ -274,33 +298,42 @@ QString StickerSetInner::shortName() const {
 }
 
 void StickerSetInner::install() {
-	if (_installRequest) return;
-	_installRequest = MTP::send(MTPmessages_InstallStickerSet(_input, MTP_bool(false)), rpcDone(&StickerSetInner::installDone), rpcFail(&StickerSetInner::installFailed));
+	if (_updateStateRequest) return;
+	_updateStateRequest = MTP::send(MTPmessages_InstallStickerSet(_input, MTP_bool(false)), rpcDone(&StickerSetInner::installDone), rpcFail(&StickerSetInner::updateStateFailed));
+}
+
+void StickerSetInner::remove() {
+	if (_updateStateRequest) return;
+	_updateStateRequest = MTP::send(MTPmessages_UninstallStickerSet(_input), rpcDone(&StickerSetInner::removeDone), rpcFail(&StickerSetInner::updateStateFailed));
 }
 
 StickerSetInner::~StickerSetInner() {
 }
 
-StickerSetBox::StickerSetBox(const MTPInputStickerSet &set) : ScrollableBox(st::stickersScroll)
+StickerSetBox::StickerSetBox(const MTPInputStickerSet &set, bool showRemove) : ScrollableBox(st::stickersScroll)
 , _inner(set)
 , _shadow(this)
 , _add(this, lang(lng_stickers_add_pack), st::defaultBoxButton)
+, _remove(this, lang(lng_stickers_remove), st::attentionBoxButton)
 , _share(this, lang(lng_stickers_share_pack), st::defaultBoxButton)
 , _cancel(this, lang(lng_cancel), st::cancelBoxButton)
-, _done(this, lang(lng_about_done), st::defaultBoxButton) {
+, _done(this, lang(lng_about_done), st::defaultBoxButton)
+, _showRemove(showRemove) {
 	setMaxHeight(st::stickersMaxHeight);
 	connect(App::main(), SIGNAL(stickersUpdated()), this, SLOT(onStickersUpdated()));
 
 	init(&_inner, st::boxButtonPadding.bottom() + _cancel.height() + st::boxButtonPadding.top());
 
 	connect(&_add, SIGNAL(clicked()), this, SLOT(onAddStickers()));
+	connect(&_remove, SIGNAL(clicked()), this, SLOT(onRemove()));
 	connect(&_share, SIGNAL(clicked()), this, SLOT(onShareStickers()));
 	connect(&_cancel, SIGNAL(clicked()), this, SLOT(onClose()));
 	connect(&_done, SIGNAL(clicked()), this, SLOT(onClose()));
 
 	connect(&_inner, SIGNAL(updateButtons()), this, SLOT(onUpdateButtons()));
 	connect(&_scroll, SIGNAL(scrolled()), this, SLOT(onScroll()));
-
+	connect(&_inner, SIGNAL(removed()), this, SLOT(onRemoved()));
+	
 	connect(&_inner, SIGNAL(installed(uint64)), this, SIGNAL(installed(uint64)));
 
 	onStickersUpdated();
@@ -330,8 +363,22 @@ void StickerSetBox::onUpdateButtons() {
 	}
 }
 
+void StickerSetBox::onRemove() {
+	ConfirmBox *box = new ConfirmBox(lng_stickers_remove_pack(lt_sticker_pack, _inner.title()), lang(lng_box_remove));
+	connect(box, SIGNAL(confirmed()), this, SLOT(onRemoveSure()));;
+	Ui::showLayer(box, ShowLayerOption::KeepOtherLayers);
+}
+
+void StickerSetBox::onRemoveSure() {
+	_inner.remove();
+}
+
 void StickerSetBox::onScroll() {
 	_inner.setScrollBottom(_scroll.scrollTop() + _scroll.height());
+}
+
+void StickerSetBox::onRemoved() {
+	Ui::hideLayer();
 }
 
 void StickerSetBox::hideAll() {
@@ -339,6 +386,7 @@ void StickerSetBox::hideAll() {
 	_shadow.hide();
 	_cancel.hide();
 	_add.hide();
+	_remove.hide();
 	_share.hide();
 	_done.hide();
 }
@@ -351,16 +399,23 @@ void StickerSetBox::showAll() {
 		if (_inner.notInstalled()) {
 			_add.show();
 			_cancel.show();
+			_remove.hide();
 			_share.hide();
 			_done.hide();
 		} else if (_inner.official()) {
 			_add.hide();
 			_share.hide();
+			_remove.hide();
 			_cancel.hide();
 			_done.show();
 		} else {
 			_share.show();
 			_cancel.show();
+			if (_showRemove) {
+				_remove.show();
+			} else {
+				_remove.hide();
+			}
 			_add.hide();
 			_done.hide();
 		}
@@ -370,6 +425,7 @@ void StickerSetBox::showAll() {
 		_share.hide();
 		_cancel.show();
 		_done.hide();
+		_remove.hide();
 	}
 	resizeEvent(0);
 	update();
@@ -390,11 +446,17 @@ void StickerSetBox::resizeEvent(QResizeEvent *e) {
 	_share.moveToRight(st::boxButtonPadding.right(), _add.y());
 	_done.moveToRight(st::boxButtonPadding.right(), _add.y());
 	if (_add.isHidden() && _share.isHidden()) {
-		_cancel.moveToRight(st::boxButtonPadding.right(), _add.y());
+		int cancel_x = st::boxButtonPadding.right();
+		_cancel.moveToRight(cancel_x, _add.y());
+		_remove.moveToRight(st::boxButtonPadding.right() + _cancel.width() + st::boxButtonPadding.left() + cancel_x, _add.y());
 	} else if (_add.isHidden()) {
-		_cancel.moveToRight(st::boxButtonPadding.right() + _share.width() + st::boxButtonPadding.left(), _add.y());
+		int cancel_x = st::boxButtonPadding.right() + _share.width() + st::boxButtonPadding.left();
+		_cancel.moveToRight(cancel_x, _add.y());
+		_remove.moveToRight(st::boxButtonPadding.right() + _cancel.width() + st::boxButtonPadding.left() + cancel_x, _add.y());
 	} else {
-		_cancel.moveToRight(st::boxButtonPadding.right() + _add.width() + st::boxButtonPadding.left(), _add.y());
+		int cancel_x = st::boxButtonPadding.right() + _add.width() + st::boxButtonPadding.left();
+		_cancel.moveToRight(cancel_x, _add.y());
+		_remove.moveToRight(st::boxButtonPadding.right() + _cancel.width() + st::boxButtonPadding.left() + cancel_x, _add.y());
 	}
 }
 
@@ -410,6 +472,8 @@ StickersInner::StickersInner() : TWidget()
 , _removeWidth(st::normalFont->width(lang(lng_stickers_remove)))
 , _returnWidth(st::normalFont->width(lang(lng_stickers_return)))
 , _restoreWidth(st::normalFont->width(lang(lng_stickers_restore)))
+, _showSel(-1)
+, _showDown(-1)
 , _selected(-1)
 , _started(-1)
 , _dragging(-1)
@@ -515,6 +579,8 @@ void StickersInner::mousePressEvent(QMouseEvent *e) {
 	if (_removeSel >= 0) {
 		_removeDown = _removeSel;
 		update(0, _itemsTop + _removeSel * _rowHeight, width(), _rowHeight);
+	} else if (_showSel >= 0) {
+		_showDown = _showSel;
 	} else if (_selected >= 0) {
 		_above = _dragging = _started = _selected;
 		_dragStart = mapFromGlobal(_mouse);
@@ -565,13 +631,20 @@ void StickersInner::onUpdateSelected() {
 		bool in = rect().marginsRemoved(QMargins(0, _itemsTop, 0, st::membersPadding.bottom())).contains(local);
 		_selected = in ? floorclamp(local.y() - _itemsTop, _rowHeight, 0, _rows.size() - 1) : -1;
 		int32 removeSel = -1;
+		int32 showSel = -1;
 
 		if (_selected >= 0) {
 			int32 remw = _rows.at(_selected)->disabled ? (_rows.at(_selected)->official ? _restoreWidth : _returnWidth) : _removeWidth;
 			QRect rem(myrtlrect(width() - st::contactsPadding.right() - st::contactsCheckPosition.x() - remw, st::contactsPadding.top() + (st::contactsPhotoSize - st::normalFont->height) / 2, remw, st::normalFont->height));
 			removeSel = rem.contains(local.x(), local.y() - _itemsTop - _selected * _rowHeight) ? _selected : -1;
+
+			QRect show(myrtlrect(st::contactsPadding.left(), st::contactsPadding.top(), st::contactsPhotoSize, st::contactsPhotoSize));
+			showSel = show.contains(local.x(), local.y() - _itemsTop - _selected * _rowHeight) ? _selected : -1;
 		}
+
 		setRemoveSel(removeSel);
+		setShowSel(showSel);
+
 		emit noDraggingScroll();
 	}
 }
@@ -590,6 +663,15 @@ void StickersInner::mouseReleaseEvent(QMouseEvent *e) {
 	onUpdateSelected();
 	if (_removeDown == _removeSel && _removeSel >= 0) {
 		_rows[_removeDown]->disabled = !_rows[_removeDown]->disabled;
+	} else if (_showDown == _showSel && _showSel >= 0) {
+		const Stickers::Sets &sets(Global::RefStickerSets());
+		const Stickers::Order &order(Global::StickerSetsOrder());
+		auto it = sets.find(order.at(_showDown));
+		if (it != sets.cend()) {
+			MTPInputStickerSet set = (it->id && it->access) ? MTP_inputStickerSetID(MTP_long(it->id), MTP_long(it->access)) : MTP_inputStickerSetShortName(MTP_string(it->shortName));
+			StickerSetBox *box = new StickerSetBox(set, false);
+			Ui::showLayer(box, KeepOtherLayers);
+		}
 	} else if (_dragging >= 0) {
 		QPoint local(mapFromGlobal(_mouse));
 		_rows[_dragging]->yadd.start(0);
@@ -604,6 +686,8 @@ void StickersInner::mouseReleaseEvent(QMouseEvent *e) {
 	if (_removeDown >= 0) {
 		update(0, _itemsTop + _removeDown * _rowHeight, width(), _rowHeight);
 		_removeDown = -1;
+	} else if (_showDown >= 0) {
+		_showDown = -1;
 	}
 }
 
@@ -663,6 +747,8 @@ void StickersInner::clear() {
 	_selected = -1;
 	_removeDown = -1;
 	setRemoveSel(-1);
+	_showDown = -1;
+	setShowSel(-1);
 	update();
 }
 
@@ -672,6 +758,13 @@ void StickersInner::setRemoveSel(int32 removeSel) {
 		_removeSel = removeSel;
 		if (_removeSel >= 0) update(0, _itemsTop + _removeSel * _rowHeight, width(), _rowHeight);
 		setCursor((_removeSel >= 0 && (_removeDown < 0 || _removeDown == _removeSel)) ? style::cur_pointer : style::cur_default);
+	}
+}
+
+void StickersInner::setShowSel(int32 showSel) {
+	if (showSel != _showSel) {
+		_showSel = showSel;
+		setCursor((_showSel >= 0 && (_showDown < 0 || _showDown == _showSel)) ? style::cur_pointer : style::cur_default);
 	}
 }
 

@@ -610,7 +610,8 @@ namespace {
 		dbiEncryptedWithSalt    = 333,
 		dbiEncrypted            = 444,
 
-		// 500-600 reserved
+		// 500-600 reserved in Official TDesktop and used for Plus
+		dbiDropdownOnTab        = 500,
 
 		dbiVersion              = 666,
 	};
@@ -1368,6 +1369,15 @@ namespace {
 			cSetSongVolume(snap(v / 1e6, 0., 1.));
 		} break;
 
+		// Plus Settings
+		case dbiDropdownOnTab: {
+			qint32 v;
+			stream >> v;
+			if (!_checkStreamStatus(stream)) return false;
+
+			cSetDropdownOnTab(v == 1);
+		} break;
+
 		default:
 			LOG(("App Error: unknown blockId in _readSetting: %1").arg(blockId));
 			return false;
@@ -1647,6 +1657,9 @@ namespace {
 		if (!Global::HiddenPinnedMessages().isEmpty()) {
 			data.stream << quint32(dbiHiddenPinnedMessages) << Global::HiddenPinnedMessages();
 		}
+
+		// Plus Settings
+		data.stream << quint32(dbiDropdownOnTab) << quint32(cDropdownOnTab() ? 1 : 0);
 
 		FileWriteDescriptor file(_userSettingsKey);
 		file.writeEncrypted(data);

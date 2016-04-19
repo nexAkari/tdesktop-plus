@@ -127,6 +127,7 @@ DeclareSetting(int32, LastUpdateCheck);
 DeclareSetting(bool, NoStartUpdate);
 DeclareSetting(bool, StartToSettings);
 DeclareSetting(bool, ReplaceEmojis);
+DeclareSetting(bool, DropdownOnTab)
 DeclareReadSetting(bool, ManyInstance);
 DeclareSetting(bool, AskDownloadPath);
 DeclareSetting(QString, DownloadPath);
