@@ -77,7 +77,6 @@ enum LaunchMode {
 	LaunchModeShowCrash,
 };
 DeclareReadSetting(LaunchMode, LaunchMode);
-DeclareSetting(bool, RoundedUserpics)
 DeclareSetting(QString, WorkingDir);
 inline void cForceWorkingDir(const QString &newDir) {
 	cSetWorkingDir(newDir);
@@ -128,7 +127,6 @@ DeclareSetting(int32, LastUpdateCheck);
 DeclareSetting(bool, NoStartUpdate);
 DeclareSetting(bool, StartToSettings);
 DeclareSetting(bool, ReplaceEmojis);
-DeclareSetting(bool, DropdownOnTab)
 DeclareReadSetting(bool, ManyInstance);
 DeclareSetting(bool, AskDownloadPath);
 DeclareSetting(QString, DownloadPath);
@@ -313,5 +311,10 @@ DeclareSetting(int32, AutoDownloadPhoto);
 DeclareSetting(int32, AutoDownloadAudio);
 DeclareSetting(int32, AutoDownloadGif);
 DeclareSetting(bool, AutoPlayGif);
+
+// Plus Settings
+DeclareSetting(bool, DropdownOnTab);
+DeclareSetting(bool, RoundedUserpics);
+DeclareSetting(bool, ReplaceDoubles);
 
 void settingsParseArgs(int argc, char *argv[]);

@@ -259,7 +259,6 @@ Copyright (c) 2014-2016 John Preston, https://desktop.telegram.org
 "lng_settings_auto_start" = "Launch Telegram when system starts";
 "lng_settings_start_min" = "Launch minimized";
 "lng_settings_add_sendto" = "Place Telegram in «Send to» menu";
-"lng_settings_rounded_userpics" = "Rounded profile pictures";
 "lng_settings_scale_label" = "Interface scale";
 "lng_settings_scale_auto" = "Auto ({cur})";
 
@@ -267,7 +266,6 @@ Copyright (c) 2014-2016 John Preston, https://desktop.telegram.org
 "lng_settings_replace_emojis" = "Replace emoji";
 "lng_settings_view_emojis" = "View list";
 "lng_settings_emoji_list" = "Supported emoji";
-"lng_settings_dropdown_on_tab" = "Show Emoji Panel on Tab";
 "lng_settings_send_enter" = "Send by Enter";
 "lng_settings_send_ctrlenter" = "Send by Ctrl+Enter";
 "lng_settings_send_cmdenter" = "Send by Cmd+Enter";
@@ -277,6 +275,11 @@ Copyright (c) 2014-2016 John Preston, https://desktop.telegram.org
 "lng_settings_bg_from_file" = "Choose from file";
 "lng_settings_bg_tile" = "Tile background";
 "lng_settings_adaptive_wide" = "Adaptive layout for wide screens";
+
+// Plus Settings
+"lng_settings_dropdown_on_tab" = "Show Emoji Panel on Tab";
+"lng_settings_rounded_userpics" = "Rounded profile pictures";
+"lng_settings_replace_doubles" = "Replace '<<', '>>' and '--'";
 
 "lng_backgrounds_header" = "Choose your new chat background";
 

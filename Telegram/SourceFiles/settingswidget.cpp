@@ -150,8 +150,6 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 , _startMinimized(this, lang(lng_settings_start_min), cStartMinimized())
 , _sendToMenu(this, lang(lng_settings_add_sendto), cSendToMenu())
 
-, _roundedUserpics(this, lang(lng_settings_rounded_userpics), cRoundedUserpics())
-
 , _dpiAutoScale(this, lng_settings_scale_auto(lt_cur, scaleLabel(cScreenScale())), (cConfigScale() == dbisAuto))
 , _dpiSlider(this, st::dpiSlider, dbisScaleCount - 1, cEvalScale(cConfigScale()) - 1)
 , _dpiWidth1(st::dpiFont1->width(scaleLabel(dbisOne)))
@@ -163,7 +161,6 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 , _replaceEmojis(this, lang(lng_settings_replace_emojis), cReplaceEmojis())
 , _viewEmojis(this, lang(lng_settings_view_emojis))
 , _stickers(this, lang(lng_stickers_you_have))
-, _dropdownOnTab(this, lang(lng_settings_dropdown_on_tab), cDropdownOnTab())
 
 , _enterSend(this, qsl("send_key"), 0, lang(lng_settings_send_enter), !cCtrlEnter())
 , _ctrlEnterSend(this, qsl("send_key"), 1, lang((cPlatform() == dbipMac || cPlatform() == dbipMacOld) ? lng_settings_send_cmdenter : lng_settings_send_ctrlenter), cCtrlEnter())
@@ -208,7 +205,13 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 , _askQuestion(this, lang(lng_settings_ask_question))
 , _telegramFAQ(this, lang(lng_settings_faq))
 , _logOut(this, lang(lng_settings_logout), st::btnRedLink)
-, _supportGetRequest(0) {
+, _supportGetRequest(0)
+
+// Plus Settings
+, _dropdownOnTab(this, lang(lng_settings_dropdown_on_tab), cDropdownOnTab())
+, _roundedUserpics(this, lang(lng_settings_rounded_userpics), cRoundedUserpics())
+, _replaceDoubles(this, lang(lng_settings_replace_doubles), cReplaceDoubles())
+	{
 	if (self()) {
 		self()->loadUserpic();
 
@@ -265,8 +268,6 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 	connect(&_startMinimized, SIGNAL(changed()), this, SLOT(onStartMinimized()));
 	connect(&_sendToMenu, SIGNAL(changed()), this, SLOT(onSendToMenu()));
 
-	connect(&_roundedUserpics, SIGNAL(changed()), this, SLOT(onRoundedUserpics()));
-
 	connect(&_dpiAutoScale, SIGNAL(changed()), this, SLOT(onScaleAuto()));
 	connect(&_dpiSlider, SIGNAL(changed(int32)), this, SLOT(onScaleChange()));
 
@@ -287,7 +288,6 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 	connect(&_replaceEmojis, SIGNAL(changed()), this, SLOT(onReplaceEmojis()));
 	connect(&_viewEmojis, SIGNAL(clicked()), this, SLOT(onViewEmojis()));
 	connect(&_stickers, SIGNAL(clicked()), this, SLOT(onStickers()));
-	connect(&_dropdownOnTab, SIGNAL(changed()), this, SLOT(onDropdownOnTab()));
 
 	connect(&_enterSend, SIGNAL(changed()), this, SLOT(onEnterSend()));
 	connect(&_ctrlEnterSend, SIGNAL(changed()), this, SLOT(onCtrlEnterSend()));
@@ -333,6 +333,12 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 	connect(&_askQuestion, SIGNAL(clicked()), this, SLOT(onAskQuestion()));
 	connect(&_telegramFAQ, SIGNAL(clicked()), this, SLOT(onTelegramFAQ()));
 	connect(&_logOut, SIGNAL(clicked()), App::wnd(), SLOT(onLogout()));
+
+	// Plus Settings
+	connect(&_dropdownOnTab, SIGNAL(changed()), this, SLOT(onDropdownOnTab()));
+	connect(&_roundedUserpics, SIGNAL(changed()), this, SLOT(onRoundedUserpics()));
+	connect(&_replaceDoubles, SIGNAL(changed()), this, SLOT(onReplaceDoubles()));
+
 
     if (App::main()) {
         connect(App::main(), SIGNAL(peerUpdated(PeerData*)), this, SLOT(peerUpdated(PeerData*)));
@@ -503,7 +509,8 @@ void SettingsInner::paintEvent(QPaintEvent *e) {
 		top += _workmodeTray.height() + st::setLittleSkip;
 	}
 
-	top += _roundedUserpics.height();
+	top += _dropdownOnTab.height() + st::setLittleSkip;  // Plus Setting
+	top += _roundedUserpics.height() + st::setLittleSkip;  // Plus Setting
 
     if (!cRetina()) {
         p.setFont(st::setHeaderFont->f);
@@ -540,9 +547,9 @@ void SettingsInner::paintEvent(QPaintEvent *e) {
 
 		top += _replaceEmojis.height() + st::setLittleSkip;
 		top += _stickers.height() + st::setSectionSkip;
+		top += _replaceDoubles.height() + st::setLittleSkip;  // Plus Setting
 		top += _enterSend.height() + st::setLittleSkip;
 		top += _ctrlEnterSend.height() + st::setSectionSkip;
-		top += _dropdownOnTab.height() + st::setLittleSkip;
 
 		top += _dontAskDownloadPath.height();
 		if (!cAskDownloadPath()) {
@@ -727,7 +734,8 @@ void SettingsInner::resizeEvent(QResizeEvent *e) {
 		_workmodeTray.move(_left, top); top += _workmodeTray.height() + st::setLittleSkip;
 	}
 
-	_roundedUserpics.move(_left, top); top += _roundedUserpics.height();
+	_dropdownOnTab.move(_left, top); top += _dropdownOnTab.height() + st::setLittleSkip;  // Plus Setting
+	_roundedUserpics.move(_left, top); top += _roundedUserpics.height() + st::setLittleSkip;  // Plus Setting
 
     if (!cRetina()) {
         top += st::setHeaderSkip;
@@ -741,7 +749,7 @@ void SettingsInner::resizeEvent(QResizeEvent *e) {
 		_viewEmojis.move(_left + st::setWidth - _viewEmojis.width(), top + st::cbDefFlat.textTop);
 		_replaceEmojis.move(_left, top); top += _replaceEmojis.height() + st::setLittleSkip;
 		_stickers.move(_left + st::cbDefFlat.textLeft, top); top += _stickers.height() + st::setLittleSkip;
-		_dropdownOnTab.move(_left, top + st::cbDefFlat.textTop); top += _dropdownOnTab.height() + st::setSectionSkip;
+		_replaceDoubles.move(_left, top + st::cbDefFlat.textTop); top += _replaceDoubles.height() + st::setSectionSkip;  // Plus Setting
 
 		_enterSend.move(_left, top); top += _enterSend.height() + st::setLittleSkip;
 		_ctrlEnterSend.move(_left, top); top += _ctrlEnterSend.height() + st::setSectionSkip;
@@ -1096,7 +1104,8 @@ void SettingsInner::showAll() {
 		_sendToMenu.hide();
 	}
 
-	_roundedUserpics.show();
+	_dropdownOnTab.show();  // Plus Setting
+	_roundedUserpics.show();  // Plus Setting
 
     if (cRetina()) {
         _dpiSlider.hide();
@@ -1115,7 +1124,7 @@ void SettingsInner::showAll() {
 			_viewEmojis.hide();
 		}
 		_stickers.show();
-		_dropdownOnTab.show();
+		_replaceDoubles.show();  // Plus Setting
 
 		_enterSend.show();
 		_ctrlEnterSend.show();
@@ -1136,7 +1145,7 @@ void SettingsInner::showAll() {
 		_replaceEmojis.hide();
 		_viewEmojis.hide();
 		_stickers.hide();
-		_dropdownOnTab.hide();
+		_replaceDoubles.hide();  // Plus Setting
 		_enterSend.hide();
 		_ctrlEnterSend.hide();
 		_dontAskDownloadPath.hide();
@@ -1481,11 +1490,6 @@ void SettingsInner::onSendToMenu() {
 	Local::writeSettings();
 }
 
-void SettingsInner::onRoundedUserpics() {
-	cSetRoundedUserpics(_roundedUserpics.checked());
-	Local::writeSettings();
-}
-
 void SettingsInner::onScaleAuto() {
 	DBIScale newScale = _dpiAutoScale.checked() ? dbisAuto : cEvalScale(cConfigScale());
 	if (newScale == cScreenScale()) {
@@ -1623,11 +1627,6 @@ void SettingsInner::onViewEmojis() {
 
 void SettingsInner::onStickers() {
 	Ui::showLayer(new StickersBox());
-}
-
-void SettingsInner::onDropdownOnTab() {
-	cSetDropdownOnTab(_dropdownOnTab.checked());
-	Local::writeUserSettings();
 }
 
 void SettingsInner::onEnterSend() {
@@ -1869,6 +1868,22 @@ void SettingsInner::onPhotoUpdateDone(PeerId peer) {
 	if (!self() || self()->id != peer) return;
 	showAll();
 	update();
+}
+
+// Plus Settings
+void SettingsInner::onDropdownOnTab() {
+	cSetDropdownOnTab(_dropdownOnTab.checked());
+	Local::writeSettings();
+}
+
+void SettingsInner::onRoundedUserpics() {
+	cSetRoundedUserpics(_roundedUserpics.checked());
+	Local::writeSettings();
+}
+
+void SettingsInner::onReplaceDoubles() {
+	cSetReplaceDoubles(_replaceDoubles.checked());
+	Local::writeUserSettings();
 }
 
 SettingsWidget::SettingsWidget(MainWindow *parent) : TWidget(parent)

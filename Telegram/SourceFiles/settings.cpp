@@ -55,7 +55,6 @@ bool gStartMinimized = false;
 bool gStartInTray = false;
 bool gAutoStart = false;
 bool gSendToMenu = false;
-bool gRoundedUserpics = true;
 bool gAutoUpdate = true;
 TWindowPos gWindowPos;
 LaunchMode gLaunchMode = LaunchModeNormal;
@@ -75,7 +74,6 @@ bool gNoStartUpdate = false;
 bool gStartToSettings = false;
 DBIDefaultAttach gDefaultAttach = dbidaDocument;
 bool gReplaceEmojis = true;
-bool gDropdownOnTab = false;
 bool gAskDownloadPath = false;
 QString gDownloadPath;
 QByteArray gDownloadPathBookmark;
@@ -160,6 +158,11 @@ int32 gAutoDownloadPhoto = 0; // all auto download
 int32 gAutoDownloadAudio = 0;
 int32 gAutoDownloadGif = 0;
 bool gAutoPlayGif = true;
+
+// Plus Settings
+bool gDropdownOnTab = false;
+bool gRoundedUserpics = true;
+bool gReplaceDoubles = true;
 
 void settingsParseArgs(int argc, char *argv[]) {
 #ifdef Q_OS_MAC

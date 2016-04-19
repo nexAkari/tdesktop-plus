@@ -129,8 +129,6 @@ public slots:
 	void onStartMinimized();
 	void onSendToMenu();
 
-	void onRoundedUserpics();
-
 	void onScaleAuto();
 	void onScaleChange();
 
@@ -145,8 +143,6 @@ public slots:
 	void onReplaceEmojis();
 	void onViewEmojis();
 	void onStickers();
-
-	void onDropdownOnTab();
 
 	void onEnterSend();
 	void onCtrlEnterSend();
@@ -190,6 +186,11 @@ public slots:
 	void onAskQuestion();
 	void onAskQuestionSure();
 	void onTelegramFAQ();
+
+	// Plus Settings
+	void onDropdownOnTab();
+	void onRoundedUserpics();
+	void onReplaceDoubles();
 
 private:
 
@@ -235,7 +236,6 @@ private:
     bool _supportTray; // cSupportTray() value on settings create
 	FlatCheckbox _workmodeTray, _workmodeWindow;
 	FlatCheckbox _autoStart, _startMinimized, _sendToMenu;
-	FlatCheckbox _roundedUserpics;
 	FlatCheckbox _dpiAutoScale;
 	Slider _dpiSlider;
 	int32 _dpiWidth1, _dpiWidth2, _dpiWidth3, _dpiWidth4;
@@ -259,7 +259,6 @@ private:
 	// chat options
 	FlatCheckbox _replaceEmojis;
 	LinkButton _viewEmojis, _stickers;
-	FlatCheckbox _dropdownOnTab;
 	FlatRadiobutton _enterSend, _ctrlEnterSend;
 	FlatCheckbox _dontAskDownloadPath;
 	int32 _downloadPathWidth;
@@ -303,6 +302,11 @@ private:
 	LinkButton _showSessions, _askQuestion, _telegramFAQ, _logOut;
 
 	mtpRequestId _supportGetRequest;
+
+	// Plus Settings
+	FlatCheckbox _dropdownOnTab;
+	FlatCheckbox _roundedUserpics;
+	FlatCheckbox _replaceDoubles;
 
 	void gotPassword(const MTPaccount_Password &result);
 	void offPasswordDone(const MTPBool &result);

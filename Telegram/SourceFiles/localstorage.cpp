@@ -613,6 +613,7 @@ namespace {
 		// 500-600 reserved in Official TDesktop and used for Plus
 		dbiDropdownOnTab        = 500,
 		dbiRoundedUserpics      = 501,
+		dbiReplaceDoubles       = 502,
 
 		dbiVersion              = 666,
 	};
@@ -1387,6 +1388,14 @@ namespace {
 			cSetRoundedUserpics(v == 1);
 		} break;
 
+		case dbiReplaceDoubles: {
+			qint32 v;
+			stream >> v;
+			if (!_checkStreamStatus(stream)) return false;
+
+			cSetReplaceDoubles(v == 1);
+			printf("cSetReplaceDoubles %d", v);
+		} break;
 
 		default:
 			LOG(("App Error: unknown blockId in _readSetting: %1").arg(blockId));
@@ -1669,8 +1678,7 @@ namespace {
 		}
 
 		// Plus Settings
-		data.stream << quint32(dbiDropdownOnTab) << quint32(cDropdownOnTab() ? 1 : 0);
-		data.stream << quint32(dbiRoundedUserpics) << qint32(cRoundedUserpics() ? 1 : 0);
+		data.stream << quint32(dbiReplaceDoubles) << qint32(cReplaceDoubles() ? 1 : 0);
 
 		FileWriteDescriptor file(_userSettingsKey);
 		file.writeEncrypted(data);
@@ -2286,6 +2294,10 @@ namespace Local {
 
 		TWindowPos pos(cWindowPos());
 		data.stream << quint32(dbiWindowPosition) << qint32(pos.x) << qint32(pos.y) << qint32(pos.w) << qint32(pos.h) << qint32(pos.moncrc) << qint32(pos.maximized);
+
+		// Plus Settings
+		data.stream << quint32(dbiDropdownOnTab) << quint32(cDropdownOnTab() ? 1 : 0);
+		data.stream << quint32(dbiRoundedUserpics) << qint32(cRoundedUserpics() ? 1 : 0);
 
 		settings.writeEncrypted(data, _settingsKey);
 	}
