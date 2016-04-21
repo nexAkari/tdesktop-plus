@@ -847,11 +847,13 @@ void SettingsInner::keyPressEvent(QKeyEvent *e) {
 			Ui::showLayer(new InformBox(DebugLogging::FileLoader() ? qsl("Enabled file download logging") : qsl("Disabled file download logging")));
 		} else if (str == qstr("crashplease")) {
 			t_assert(!"Crashed in Settings!");
+		/*
 		} else if (str == qstr("setabout")) {
 			EditAboutBox *box = new EditAboutBox();
 			Ui::showLayer(box);
 			from = size;
 			break;
+		*/
 		} else if (str == qstr("workmode")) {
 			QString text = Global::DialogsModeEnabled() ? qsl("Disable work mode?") : qsl("Enable work mode?");
 			auto box = std_::make_unique<ConfirmBox>(text);
@@ -864,7 +866,7 @@ void SettingsInner::keyPressEvent(QKeyEvent *e) {
 			qsl("testmode").startsWith(str) ||
 			qsl("loadlang").startsWith(str) ||
 			qsl("debugfiles").startsWith(str) ||
-			qsl("setabout").startsWith(str) ||
+			// qsl("setabout").startsWith(str) ||
 			qsl("workmode").startsWith(str) ||
 			qsl("crashplease").startsWith(str)) {
 			break;

@@ -281,6 +281,7 @@ private:
 	QString _sentName;
 };
 
+/*
 class EditAboutBox : public AbstractBox, public RPCSender {
 	Q_OBJECT
 	
@@ -318,6 +319,7 @@ private:
 	mtpRequestId _requestId;
 	QString _sentAbout;
 };
+*/
 
 class EditChannelBox : public AbstractBox, public RPCSender {
 	Q_OBJECT

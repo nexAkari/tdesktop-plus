@@ -1173,6 +1173,7 @@ void EditNameTitleBox::onSaveChatDone(const MTPUpdates &updates) {
 	emit closed();
 }
 
+/*
 EditAboutBox::EditAboutBox() : AbstractBox(),
 _save(this, lang(lng_settings_save), st::defaultBoxButton),
 _cancel(this, lang(lng_cancel), st::cancelBoxButton),
@@ -1266,6 +1267,7 @@ bool EditAboutBox::onUpdateFail(const RPCError &error) {
 	_about.setFocus();
 	return true;
 }
+*/
 
 EditChannelBox::EditChannelBox(ChannelData *channel) : AbstractBox()
 , _channel(channel)

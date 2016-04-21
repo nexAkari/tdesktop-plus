@@ -195,7 +195,7 @@ Copyright (c) 2014-2016 John Preston, https://desktop.telegram.org
 
 "lng_signup_firstname" = "First Name";
 "lng_signup_lastname" = "Last Name";
-"lng_signup_about" = "About (Optional)";
+// "lng_signup_about" = "About (Optional)";  // Removed By Telegram
 
 "lng_dlg_filter" = "Search";
 "lng_dlg_new_group_name" = "Group name";
