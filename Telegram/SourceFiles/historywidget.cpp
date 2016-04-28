@@ -1745,7 +1745,7 @@ void HistoryInner::onUpdateSelected() {
 	if (lnkChanged || dragState.cursor != _dragCursorState) {
 		PopupTooltip::Hide();
 	}
-	if (dragState.link || dragState.cursor == HistoryInDateCursorState || dragState.cursor == HistoryInForwardedCursorState) {
+	if (dragState.link || dragState.cursor == HistoryInDateCursorState || dragState.cursor == HistoryInForwardedCursorState || dragState.cursor == HistoryInEditDateCursorState) {
 		PopupTooltip::Show(1000, this);
 	}
 
@@ -1757,6 +1757,8 @@ void HistoryInner::onUpdateSelected() {
 		} else if (_dragCursorState == HistoryInTextCursorState && (_selected.isEmpty() || _selected.cbegin().value() != FullSelection)) {
 			cur = style::cur_text;
 		} else if (_dragCursorState == HistoryInDateCursorState) {
+//			cur = style::cur_cross;
+		} else if (_dragCursorState == HistoryInEditDateCursorState) {
 //			cur = style::cur_cross;
 		}
 	} else if (item) {
@@ -2028,6 +2030,10 @@ QString HistoryInner::tooltipText() const {
 		}
 	} else if (ClickHandlerPtr lnk = ClickHandler::getActive()) {
 		return lnk->tooltip();
+	} else if (_dragCursorState == HistoryInEditDateCursorState && _dragAction == NoDrag) {
+		if (App::hoveredItem()) {
+			return qsl("Edited at ") + App::hoveredItem()->getEditDate().toString(QLocale::system().dateTimeFormat(QLocale::LongFormat));
+		}
 	}
 	return QString();
 }

@@ -736,6 +736,7 @@ enum HistoryCursorState {
 	HistoryInTextCursorState,
 	HistoryInDateCursorState,
 	HistoryInForwardedCursorState,
+	HistoryInEditDateCursorState,
 };
 
 struct HistoryTextState {
@@ -800,6 +801,11 @@ struct HistoryMessageViews : public BaseComponent<HistoryMessageViews> {
 	QString _viewsText;
 	int _views = 0;
 	int _viewsWidth = 0;
+};
+
+struct HistoryMessageEditDate : public BaseComponent<HistoryMessageEditDate> {
+	int _editDate = 0;
+	QDateTime _date;
 };
 
 struct HistoryMessageSigned : public BaseComponent<HistoryMessageSigned> {
@@ -1229,6 +1235,9 @@ public:
 	bool hasViews() const {
 		return _flags & MTPDmessage::Flag::f_views;
 	}
+	bool hasEditDate() const {
+		return _flags & MTPDmessage::Flag::f_edit_date;
+	}
 	bool isPost() const {
 		return _flags & MTPDmessage::Flag::f_post;
 	}
@@ -1246,6 +1255,10 @@ public:
 	}
 	virtual int32 viewsCount() const {
 		return hasViews() ? 1 : -1;
+	}
+
+	virtual QDateTime getEditDate() const {
+		return hasEditDate() ? date : ::date(0);
 	}
 
 	virtual bool needCheck() const {
@@ -1296,6 +1309,8 @@ public:
 	virtual void drawInfo(Painter &p, int32 right, int32 bottom, int32 width, bool selected, InfoDisplayType type) const {
 	}
 	virtual void setViewsCount(int32 count) {
+	}
+	virtual void setEditDate(int32 newDate) {
 	}
 	virtual void setId(MsgId newId);
 	virtual void drawInDialog(Painter &p, const QRect &r, bool act, const HistoryItem *&cacheFor, Text &cache) const = 0;
@@ -1372,6 +1387,9 @@ public:
 		return 0;
 	}
 	virtual bool pointInTime(int32 right, int32 bottom, int x, int y, InfoDisplayType type) const {
+		return false;
+	}
+	virtual bool pointInPencil(int32 right, int32 bottom, int x, int y, InfoDisplayType type) const {
 		return false;
 	}
 
@@ -2617,6 +2635,7 @@ public:
 
 	void drawInfo(Painter &p, int32 right, int32 bottom, int32 width, bool selected, InfoDisplayType type) const override;
 	void setViewsCount(int32 count) override;
+	void setEditDate(int32 newDate) override;
 	void setId(MsgId newId) override;
 	void draw(Painter &p, const QRect &r, TextSelection selection, uint64 ms) const override;
 
@@ -2626,6 +2645,7 @@ public:
 
 	bool hasPoint(int x, int y) const override;
 	bool pointInTime(int32 right, int32 bottom, int x, int y, InfoDisplayType type) const override;
+	bool pointInPencil(int32 right, int32 bottom, int x, int y, InfoDisplayType type) const override;
 
 	HistoryTextState getState(int x, int y, HistoryStateRequest request) const override;
 
@@ -2668,6 +2688,9 @@ public:
 		if (out() && !isPost()) {
 			result += st::msgDateCheckSpace + st::msgCheckImg.pxWidth();
 		}
+		if (const HistoryMessageEditDate *editDate = Get<HistoryMessageEditDate>()) {  // Can't we just check if it exsists without 'Get'ting it?
+			result += st::msgViewsEditSpace + st::msgEditImg.pxWidth();
+		}
 		return result;
 	}
 	int32 timeLeft() const override {
@@ -2676,6 +2699,9 @@ public:
 			result += st::msgDateViewsSpace + views->_viewsWidth + st::msgDateCheckSpace + st::msgViewsImg.pxWidth();
 		} else if (id < 0 && history()->peer->isSelf()) {
 			result += st::msgDateCheckSpace + st::msgCheckImg.pxWidth();
+		}
+		if (const HistoryMessageEditDate *editDate = Get<HistoryMessageEditDate>()) {
+			result += st::msgViewsEditSpace + st::msgEditImg.pxWidth();
 		}
 		return result;
 	}
@@ -2688,6 +2714,13 @@ public:
 			return views->_views;
 		}
 		return HistoryItem::viewsCount();
+	}
+
+	QDateTime getEditDate() const override {
+		if (auto editDate = Get<HistoryMessageEditDate>()) {
+			return editDate->_date;
+		}
+		return HistoryItem::getEditDate();
 	}
 
 	bool updateDependencyItem() override {
@@ -2754,6 +2787,7 @@ private:
 		PeerId fromIdOriginal = 0;
 		MsgId originalId = 0;
 		const MTPReplyMarkup *markup = nullptr;
+		int editDate = -1;
 	};
 	void createComponentsHelper(MTPDmessage::Flags flags, MsgId replyTo, int32 viaBotId, const MTPReplyMarkup &markup);
 	void createComponents(const CreateConfig &config);

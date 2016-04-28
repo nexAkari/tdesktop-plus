@@ -6706,6 +6706,7 @@ HistoryMessage::HistoryMessage(History *history, const MTPDmessage &msg)
 	if (msg.has_via_bot_id()) config.viaBotId = msg.vvia_bot_id.v;
 	if (msg.has_views()) config.viewsCount = msg.vviews.v;
 	if (msg.has_reply_markup()) config.markup = &msg.vreply_markup;
+	if (msg.has_edit_date()) config.editDate = msg.vedit_date.v;
 
 	createComponents(config);
 
@@ -6731,6 +6732,14 @@ HistoryMessage::HistoryMessage(History *history, MsgId id, MTPDmessage::Flags fl
 	} else if (isPost()) {
 		config.viewsCount = 1;
 	}
+
+	// forwarded messages don't have edit date, so we don't need this
+	// int fwdEditDate = fwd;
+	// if (fwdEditDate.toMSecsSinceEpoch() > 0) {
+	// 	config.editDate = (fwdEditDate.toMSecsSinceEpoch() / 1000);  // Awful...
+	// } else if (hasEditDate()) {
+	// 	config.editDate = (date.toMSecsSinceEpoch() / 1000);
+	// }
 
 	createComponents(config);
 
@@ -6769,6 +6778,7 @@ void HistoryMessage::createComponentsHelper(MTPDmessage::Flags flags, MsgId repl
 	if (flags & MTPDmessage::Flag::f_via_bot_id) config.viaBotId = viaBotId;
 	if (flags & MTPDmessage::Flag::f_reply_to_msg_id) config.replyTo = replyTo;
 	if (flags & MTPDmessage::Flag::f_reply_markup) config.markup = &markup;
+	if (flags & MTPDmessage::Flag::f_edit_date) config.editDate = 0;
 	if (isPost()) config.viewsCount = 1;
 
 	createComponents(config);
@@ -6798,6 +6808,9 @@ void HistoryMessage::createComponents(const CreateConfig &config) {
 			mask |= HistoryMessageReplyMarkup::Bit();
 		}
 	}
+	if (config.editDate >= 0) {
+		mask |= HistoryMessageEditDate::Bit();
+	}
 	UpdateComponents(mask);
 	if (auto reply = Get<HistoryMessageReply>()) {
 		reply->replyToMsgId = config.replyTo;
@@ -6810,6 +6823,9 @@ void HistoryMessage::createComponents(const CreateConfig &config) {
 	}
 	if (auto views = Get<HistoryMessageViews>()) {
 		views->_views = config.viewsCount;
+	}
+	if (auto editDate = Get<HistoryMessageEditDate>()) {
+		editDate->_editDate = config.editDate;
 	}
 	if (auto msgsigned = Get<HistoryMessageSigned>()) {
 		msgsigned->create(_from->asUser(), date);
@@ -6857,6 +6873,12 @@ void HistoryMessage::initTime() {
 	if (auto views = Get<HistoryMessageViews>()) {
 		views->_viewsText = (views->_views >= 0) ? formatViewsCount(views->_views) : QString();
 		views->_viewsWidth = views->_viewsText.isEmpty() ? 0 : st::msgDateFont->width(views->_viewsText);
+	}
+	if (auto editDate = Get<HistoryMessageEditDate>()) {
+		if (editDate->_editDate == 0) {
+			editDate->_editDate = date.toMSecsSinceEpoch() / 1000;
+		}
+		editDate->_date = ::date(editDate->_editDate);
 	}
 }
 
@@ -7051,6 +7073,7 @@ void HistoryMessage::applyEdition(const MTPDmessage &message) {
 	setMedia(message.has_media() ? (&message.vmedia) : nullptr);
 	setReplyMarkup(message.has_reply_markup() ? (&message.vreply_markup) : nullptr);
 	setViewsCount(message.has_views() ? message.vviews.v : -1);
+	setEditDate(message.has_edit_date() ? message.vedit_date.v : -1);
 
 	setPendingInitDimensions();
 	if (App::main()) {
@@ -7305,8 +7328,20 @@ void HistoryMessage::drawInfo(Painter &p, int32 right, int32 bottom, int32 width
 
 	QPoint iconPos;
 	const QRect *iconRect = 0;
+	int32 offsetX = 0;
+	if (auto editDate = Get<HistoryMessageEditDate>()) {
+		iconPos = QPoint(infoRight - infoW + st::msgEditPos.x(), infoBottom - st::msgEditImg.pxHeight() + st::msgEditPos.y());
+		offsetX += st::msgEditImg.pxWidth() + st::msgViewsEditSpace;
+		if (outbg) {
+			iconRect = &(invertedsprites ? st::msgInvEditImg : (selected ? st::msgSelectOutEditImg : st::msgOutEditImg));
+		} else {
+			iconRect = &(invertedsprites ? st::msgInvEditImg : (selected ? st::msgSelectEditImg : st::msgEditImg));
+		}
+		p.drawPixmap(iconPos, App::sprite(), *iconRect);
+	}
+
 	if (auto views = Get<HistoryMessageViews>()) {
-		iconPos = QPoint(infoRight - infoW + st::msgViewsPos.x(), infoBottom - st::msgViewsImg.pxHeight() + st::msgViewsPos.y());
+		iconPos = QPoint(infoRight - infoW + offsetX + st::msgViewsPos.x(), infoBottom - st::msgViewsImg.pxHeight() + st::msgViewsPos.y());
 		if (id > 0) {
 			if (outbg) {
 				iconRect = &(invertedsprites ? st::msgInvViewsImg : (selected ? st::msgSelectOutViewsImg : st::msgOutViewsImg));
@@ -7324,7 +7359,7 @@ void HistoryMessage::drawInfo(Painter &p, int32 right, int32 bottom, int32 width
 		}
 		p.drawPixmap(iconPos, App::sprite(), *iconRect);
 	} else if (id < 0 && history()->peer->isSelf()) {
-		iconPos = QPoint(infoRight - infoW, infoBottom - st::msgViewsImg.pxHeight() + st::msgViewsPos.y());
+		iconPos = QPoint(infoRight - infoW + offsetX, infoBottom - st::msgViewsImg.pxHeight() + st::msgViewsPos.y());
 		iconRect = &(invertedsprites ? st::msgInvSendingViewsImg : st::msgSendingViewsImg);
 		p.drawPixmap(iconPos, App::sprite(), *iconRect);
 	}
@@ -7354,6 +7389,26 @@ void HistoryMessage::setViewsCount(int32 count) {
 	if (was == views->_viewsWidth) {
 		Ui::repaintHistoryItem(this);
 	} else {
+		if (_text.hasSkipBlock()) {
+			_text.setSkipBlock(HistoryMessage::skipBlockWidth(), HistoryMessage::skipBlockHeight());
+			_textWidth = 0;
+			_textHeight = 0;
+		}
+		setPendingInitDimensions();
+	}
+}
+
+void HistoryMessage::setEditDate(int32 newDate) {
+	if (Has<HistoryMessageEditDate>()) {
+		auto editDate = Get<HistoryMessageEditDate>();
+		if (editDate->_editDate == newDate || (newDate >= 0 && editDate->_editDate > newDate)) return;
+		editDate->_date = ::date(newDate);
+		Ui::repaintHistoryItem(this);
+	} else {
+		AddComponents(HistoryMessageEditDate::Bit());
+		auto editDate = Get<HistoryMessageEditDate>();
+		editDate->_editDate = newDate;
+		editDate->_date = ::date(newDate);
 		if (_text.hasSkipBlock()) {
 			_text.setSkipBlock(HistoryMessage::skipBlockWidth(), HistoryMessage::skipBlockHeight());
 			_textWidth = 0;
@@ -7689,6 +7744,23 @@ bool HistoryMessage::pointInTime(int32 right, int32 bottom, int x, int y, InfoDi
 	return QRect(dateX, dateY, HistoryMessage::timeWidth(), st::msgDateFont->height).contains(x, y);
 }
 
+bool HistoryMessage::pointInPencil(int32 right, int32 bottom, int x, int y, InfoDisplayType type) const {
+	int32 infoRight = right, infoBottom = bottom;
+	switch (type) {
+		case InfoDisplayDefault:
+			infoRight -= st::msgPadding.right() - st::msgDateDelta.x();
+			infoBottom -= st::msgPadding.bottom() - st::msgDateDelta.y();
+			break;
+		case InfoDisplayOverImage:
+			infoRight -= st::msgDateImgDelta + st::msgDateImgPadding.x();
+			infoBottom -= st::msgDateImgDelta + st::msgDateImgPadding.y();
+			break;
+	}
+	int32 editDateX = infoRight - HistoryMessage::infoWidth() + st::msgEditPos.x();
+	int32 editDateY = infoBottom - st::msgEditImg.pxWidth() + st::msgEditPos.y();
+	return QRect(editDateX, editDateY, st::msgEditImg.pxWidth(), st::msgEditImg.pxHeight()).contains(x, y);
+}
+
 HistoryTextState HistoryMessage::getState(int x, int y, HistoryStateRequest request) const {
 	HistoryTextState result;
 
@@ -7707,6 +7779,7 @@ HistoryTextState HistoryMessage::getState(int x, int y, HistoryStateRequest requ
 		auto fwd = Get<HistoryMessageForwarded>();
 		auto via = Get<HistoryMessageVia>();
 		auto reply = Get<HistoryMessageReply>();
+		auto editDate = Get<HistoryMessageEditDate>();
 
 		int top = marginTop();
 		QRect r(left, top, width, height - top - marginBottom());
@@ -7765,8 +7838,10 @@ HistoryTextState HistoryMessage::getState(int x, int y, HistoryStateRequest requ
 		}
 
 		bool inDate = false, mediaDisplayed = _media && _media->isDisplayed();
+		bool inEditDate = false;
 		if (!mediaDisplayed || !_media->customInfoLayout()) {
 			inDate = HistoryMessage::pointInTime(r.x() + r.width(), r.y() + r.height(), x, y, InfoDisplayDefault);
+			inEditDate = editDate ? HistoryMessage::pointInPencil(r.x() + r.width(), r.y() + r.height(), x, y, InfoDisplayDefault) : false;
 		}
 
 		if (mediaDisplayed) {
@@ -7783,6 +7858,8 @@ HistoryTextState HistoryMessage::getState(int x, int y, HistoryStateRequest requ
 		}
 		if (inDate) {
 			result.cursor = HistoryInDateCursorState;
+		} else if (inEditDate) {
+			result.cursor = HistoryInEditDateCursorState;
 		}
 	} else {
 		result = _media->getState(x - left, y - marginTop(), request);
