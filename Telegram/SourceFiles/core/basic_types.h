@@ -813,8 +813,7 @@ inline QSharedPointer<T> MakeShared(Args&&... args) {
 template <typename T>
 class NeverFreedPointer {
 public:
-	explicit NeverFreedPointer() {
-	}
+	NeverFreedPointer() = default;
 	NeverFreedPointer(const NeverFreedPointer<T> &other) = delete;
 	NeverFreedPointer &operator=(const NeverFreedPointer<T> &other) = delete;
 
@@ -861,7 +860,7 @@ public:
 	}
 
 private:
-	T *_p = nullptr;
+	T *_p;
 
 };
 
@@ -997,7 +996,7 @@ public:
 
 	ComposerMetadata(uint64 mask) : size(0), last(64), _mask(mask) {
 		for (int i = 0; i < 64; ++i) {
-			uint64 m = (1 << i);
+			uint64 m = (1ULL << i);
 			if (_mask & m) {
 				int s = ComponentWraps[i].Size;
 				if (s) {

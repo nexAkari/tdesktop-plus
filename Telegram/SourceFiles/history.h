@@ -356,6 +356,7 @@ public:
 	bool oldLoaded = false;
 	bool newLoaded = true;
 	HistoryItem *lastMsg = nullptr;
+	HistoryItem *lastSentMsg = nullptr;
 	QDateTime lastMsgDate;
 
 	typedef QList<HistoryItem*> NotifyQueue;
@@ -803,16 +804,17 @@ struct HistoryMessageViews : public BaseComponent<HistoryMessageViews> {
 	int _viewsWidth = 0;
 };
 
-struct HistoryMessageEditDate : public BaseComponent<HistoryMessageEditDate> {
-	int _editDate = 0;
-	QDateTime _date;
-};
-
 struct HistoryMessageSigned : public BaseComponent<HistoryMessageSigned> {
 	void create(UserData *from, const QDateTime &date);
 	int maxWidth() const;
 
 	Text _signature;
+};
+
+struct HistoryMessageEdited : public BaseComponent<HistoryMessageEdited> {
+	void create(const QDateTime &editDate);
+
+	QDateTime _editDate;
 };
 
 struct HistoryMessageForwarded : public BaseComponent<HistoryMessageForwarded> {
@@ -1310,7 +1312,7 @@ public:
 	}
 	virtual void setViewsCount(int32 count) {
 	}
-	virtual void setEditDate(int32 newDate) {
+	virtual void setEditDate(const QDateTime newDate) {
 	}
 	virtual void setId(MsgId newId);
 	virtual void drawInDialog(Painter &p, const QRect &r, bool act, const HistoryItem *&cacheFor, Text &cache) const = 0;
@@ -1337,6 +1339,9 @@ public:
 	}
 
 	bool canEdit(const QDateTime &cur) const;
+	bool wasEdited() const {
+		return _flags & MTPDmessage::Flag::f_edit_date;
+	}
 
 	bool suggestBanReportDeleteAll() const {
 		ChannelData *channel = history()->peer->asChannel();
@@ -1676,6 +1681,9 @@ public:
 	virtual bool isDisplayed() const {
 		return true;
 	}
+	virtual bool hasTextForCopy() const {
+		return false;
+	}
 	virtual void initDimensions() = 0;
 	virtual int resizeGetHeight(int width) {
 		_width = qMin(width, _maxw);
@@ -1896,6 +1904,9 @@ public:
 	TextSelection adjustSelection(TextSelection selection, TextSelectType type) const override {
 		return _caption.adjustSelection(selection, type);
 	}
+	bool hasTextForCopy() const override {
+		return !_caption.isEmpty();
+	}
 
 	QString inDialogsText() const override;
 	QString selectedText(TextSelection selection) const override;
@@ -1972,6 +1983,9 @@ public:
 
 	TextSelection adjustSelection(TextSelection selection, TextSelectType type) const override {
 		return _caption.adjustSelection(selection, type);
+	}
+	bool hasTextForCopy() const override {
+		return !_caption.isEmpty();
 	}
 
 	QString inDialogsText() const override;
@@ -2093,6 +2107,9 @@ public:
 		}
 		return selection;
 	}
+	bool hasTextForCopy() const override {
+		return Has<HistoryDocumentCaptioned>();
+	}
 
 	QString inDialogsText() const override;
 	QString selectedText(TextSelection selection) const override;
@@ -2176,6 +2193,9 @@ public:
 
 	TextSelection adjustSelection(TextSelection selection, TextSelectType type) const override {
 		return _caption.adjustSelection(selection, type);
+	}
+	bool hasTextForCopy() const override {
+		return !_caption.isEmpty();
 	}
 
 	QString inDialogsText() const override;
@@ -2402,6 +2422,9 @@ public:
 	HistoryTextState getState(int x, int y, HistoryStateRequest request) const override;
 
 	TextSelection adjustSelection(TextSelection selection, TextSelectType type) const override;
+	bool hasTextForCopy() const override {
+		return false; // we do not add _title and _description in FullSelection text copy.
+	}
 
 	bool toggleSelectionByHandlerClick(const ClickHandlerPtr &p) const override {
 		return _attach && _attach->toggleSelectionByHandlerClick(p);
@@ -2533,6 +2556,9 @@ public:
 	HistoryTextState getState(int x, int y, HistoryStateRequest request) const override;
 
 	TextSelection adjustSelection(TextSelection selection, TextSelectType type) const override;
+	bool hasTextForCopy() const override {
+		return !_title.isEmpty() || !_description.isEmpty();
+	}
 
 	bool toggleSelectionByHandlerClick(const ClickHandlerPtr &p) const override {
 		return p == _link;
@@ -2635,7 +2661,7 @@ public:
 
 	void drawInfo(Painter &p, int32 right, int32 bottom, int32 width, bool selected, InfoDisplayType type) const override;
 	void setViewsCount(int32 count) override;
-	void setEditDate(int32 newDate) override;
+	void setEditDate(const QDateTime newDate) override;
 	void setId(MsgId newId) override;
 	void draw(Painter &p, const QRect &r, TextSelection selection, uint64 ms) const override;
 
@@ -2688,7 +2714,7 @@ public:
 		if (out() && !isPost()) {
 			result += st::msgDateCheckSpace + st::msgCheckImg.pxWidth();
 		}
-		if (const HistoryMessageEditDate *editDate = Get<HistoryMessageEditDate>()) {  // Can't we just check if it exsists without 'Get'ting it?
+		if (Has<HistoryMessageEdited>()) {
 			result += st::msgViewsEditSpace + st::msgEditImg.pxWidth();
 		}
 		return result;
@@ -2700,7 +2726,7 @@ public:
 		} else if (id < 0 && history()->peer->isSelf()) {
 			result += st::msgDateCheckSpace + st::msgCheckImg.pxWidth();
 		}
-		if (const HistoryMessageEditDate *editDate = Get<HistoryMessageEditDate>()) {
+		if (Has<HistoryMessageEdited>()) {
 			result += st::msgViewsEditSpace + st::msgEditImg.pxWidth();
 		}
 		return result;
@@ -2717,8 +2743,8 @@ public:
 	}
 
 	QDateTime getEditDate() const override {
-		if (auto editDate = Get<HistoryMessageEditDate>()) {
-			return editDate->_date;
+		if (auto editDate = Get<HistoryMessageEdited>()) {
+			return editDate->_editDate;
 		}
 		return HistoryItem::getEditDate();
 	}
@@ -2786,8 +2812,8 @@ private:
 		PeerId authorIdOriginal = 0;
 		PeerId fromIdOriginal = 0;
 		MsgId originalId = 0;
+		QDateTime editDate;
 		const MTPReplyMarkup *markup = nullptr;
-		int editDate = -1;
 	};
 	void createComponentsHelper(MTPDmessage::Flags flags, MsgId replyTo, int32 viaBotId, const MTPReplyMarkup &markup);
 	void createComponents(const CreateConfig &config);

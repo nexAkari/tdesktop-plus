@@ -13,7 +13,7 @@ The source code is published under GPLv3 with OpenSSL exception, the license is 
 
 ## Third-party libraries
 
-* Qt 5.3.2 and 5.5.1, slightly patched ([LGPL](http://doc.qt.io/qt-5/lgpl.html))
+* Qt 5.3.2 and 5.6.0, slightly patched ([LGPL](http://doc.qt.io/qt-5/lgpl.html))
 * OpenSSL 1.0.1g ([OpenSSL License](https://www.openssl.org/source/license.html))
 * zlib 1.2.8 ([zlib License](http://www.zlib.net/zlib_license.html))
 * libexif 0.6.20 ([LGPL](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html))
@@ -57,24 +57,10 @@ The source code is published under GPLv3 with OpenSSL exception, the license is 
   * SourceFiles/art/emoji_250x.png
   * SourceFiles/gui/emoji_config.cpp
 
-* ### MetaStyle
+* ### codegen_style
+* ### codegen_numbers
 
-  From two files and two sprites
-  * Resources/style_classes.txt
-  * Resources/style.txt
-  * SourceFiles/art/sprite.png
-  * SourceFiles/art/sprite_200x.png
-
-  Creates two other sprites, four sprite grids and style constants code
-  * SourceFiles/art/sprite_125x.png
-  * SourceFiles/art/sprite_150x.png
-  * SourceFiles/art/grid.png
-  * SourceFiles/art/grid_125x.png
-  * SourceFiles/art/grid_150x.png
-  * SourceFiles/art/grid_200x.png
-  * GeneratedFiles/style_classes.h
-  * GeneratedFiles/style_auto.h
-  * GeneratedFiles/style_auto.cpp
+  Helper code generating console utilities.
 
 * ### MetaLang
 
