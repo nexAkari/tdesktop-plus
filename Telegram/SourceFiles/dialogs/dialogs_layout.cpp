@@ -45,11 +45,14 @@ void paintRow(Painter &p, History *history, HistoryItem *item, int w, bool activ
 	// draw chat icon
 	if (history->peer->isChat() || history->peer->isMegagroup()) {
 		p.drawSprite(QPoint(rectForName.left() + st::dlgChatImgPos.x(), rectForName.top() + st::dlgChatImgPos.y()), (active ? st::dlgActiveChatImg : st::dlgChatImg));
-		rectForName.setLeft(rectForName.left() + st::dlgImgSkip);
 	} else if (history->peer->isChannel()) {
 		p.drawSprite(QPoint(rectForName.left() + st::dlgChannelImgPos.x(), rectForName.top() + st::dlgChannelImgPos.y()), (active ? st::dlgActiveChannelImg : st::dlgChannelImg));
-		rectForName.setLeft(rectForName.left() + st::dlgImgSkip);
+	} else if (history->peer->isUser() && !history->peer->asUser()->botInfo) {
+		p.drawSprite(QPoint(rectForName.left() + st::dlgUserImgPos.x(), rectForName.top() + st::dlgUserImgPos.y()), (active ? st::dlgActiveUserImg : st::dlgUserImg));
+	} else if (history->peer->isUser() && history->peer->asUser()->botInfo) {
+		p.drawSprite(QPoint(rectForName.left() + st::dlgBotImgPos.x(), rectForName.top() + st::dlgBotImgPos.y()), (active ? st::dlgActiveBotImg : st::dlgBotImg));
 	}
+	rectForName.setLeft(rectForName.left() + st::dlgImgSkip);
 
 	if (!item) {
 		p.setFont(st::dlgHistFont);

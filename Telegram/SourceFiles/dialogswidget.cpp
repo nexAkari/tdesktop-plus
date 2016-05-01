@@ -250,11 +250,14 @@ void DialogsInner::peopleResultPaint(PeerData *peer, Painter &p, int32 w, bool a
 	// draw chat icon
 	if (peer->isChat() || peer->isMegagroup()) {
 		p.drawSprite(QPoint(rectForName.left() + st::dlgChatImgPos.x(), rectForName.top() + st::dlgChatImgPos.y()), (active ? st::dlgActiveChatImg : st::dlgChatImg));
-		rectForName.setLeft(rectForName.left() + st::dlgImgSkip);
 	} else if (peer->isChannel()) {
 		p.drawSprite(QPoint(rectForName.left() + st::dlgChannelImgPos.x(), rectForName.top() + st::dlgChannelImgPos.y()), (active ? st::dlgActiveChannelImg : st::dlgChannelImg));
-		rectForName.setLeft(rectForName.left() + st::dlgImgSkip);
+	} else if (peer->isUser() && !peer->asUser()->botInfo) {
+		p.drawSprite(QPoint(rectForName.left() + st::dlgUserImgPos.x(), rectForName.top() + st::dlgUserImgPos.y()), (active ? st::dlgActiveUserImg : st::dlgUserImg));
+	} else if (peer->isUser() && peer->asUser()->botInfo) {
+		p.drawSprite(QPoint(rectForName.left() + st::dlgBotImgPos.x(), rectForName.top() + st::dlgBotImgPos.y()), (active ? st::dlgActiveBotImg : st::dlgBotImg));
 	}
+	rectForName.setLeft(rectForName.left() + st::dlgImgSkip);
 	if (peer->isVerified()) {
 		rectForName.setWidth(rectForName.width() - st::verifiedCheck.pxWidth() - st::verifiedCheckPos.x());
 		p.drawSprite(rectForName.topLeft() + QPoint(qMin(peer->dialogName().maxWidth(), rectForName.width()), 0) + st::verifiedCheckPos, (active ? st::verifiedCheckInv : st::verifiedCheck));

@@ -932,6 +932,12 @@ dlgActiveChatImg: sprite(104px, 37px, 16px, 11px);
 dlgChannelImgPos: point(3px, 4px);
 dlgChannelImg: sprite(105px, 1px, 12px, 11px);
 dlgActiveChannelImg: sprite(105px, 14px, 12px, 11px);
+dlgUserImgPos: point(2px, 3px);
+dlgUserImg: sprite(12px, 480px, 13px, 12px);
+dlgActiveUserImg: sprite(12px, 492px, 13px, 12px);
+dlgBotImgPos: point(3px, 3px);
+dlgBotImg: sprite(12px, 504px, 13px, 13px);
+dlgActiveBotImg: sprite(12px, 517px, 13px, 13px);
 dlgImgSkip: 22px;
 
 dlgCheckLeft: 5px;

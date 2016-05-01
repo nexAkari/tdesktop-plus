@@ -181,11 +181,14 @@ void NotifyWindow::updateNotifyDisplay() {
 		if (!App::passcoded() && cNotifyView() <= dbinvShowName) {
 			if (history->peer->isChat() || history->peer->isMegagroup()) {
 				p.drawSprite(QPoint(rectForName.left() + st::dlgChatImgPos.x(), rectForName.top() + st::dlgChatImgPos.y()), st::dlgChatImg);
-				rectForName.setLeft(rectForName.left() + st::dlgImgSkip);
 			} else if (history->peer->isChannel()) {
 				p.drawSprite(QPoint(rectForName.left() + st::dlgChannelImgPos.x(), rectForName.top() + st::dlgChannelImgPos.y()), st::dlgChannelImg);
-				rectForName.setLeft(rectForName.left() + st::dlgImgSkip);
+			} else if (history->peer->isUser() && !history->peer->asUser()->botInfo) {
+				p.drawSprite(QPoint(rectForName.left() + st::dlgUserImgPos.x(), rectForName.top() + st::dlgUserImgPos.y()), st::dlgUserImg);
+			} else if (history->peer->isUser() && !history->peer->asUser()->botInfo) {
+				p.drawSprite(QPoint(rectForName.left() + st::dlgBotImgPos.x(), rectForName.top() + st::dlgBotImgPos.y()), st::dlgBotImg);
 			}
+			rectForName.setLeft(rectForName.left() + st::dlgImgSkip);
 		}
 
 		QDateTime now(QDateTime::currentDateTime()), lastTime(item->date);
