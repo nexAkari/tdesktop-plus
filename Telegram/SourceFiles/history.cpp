@@ -1029,9 +1029,10 @@ HistoryItem *History::createItem(const MTPMessage &msg, bool applyServiceAction,
 		}
 		if (badMedia == 1) {
 			QString text(lng_message_unsupported(lt_link, qsl("https://desktop.telegram.org")));
-			EntitiesInText entities = textParseEntities(text, _historyTextNoMonoOptions.flags);
+			EntitiesInText entities;
+			textParseEntities(text, _historyTextNoMonoOptions.flags, &entities);
 			entities.push_front(EntityInText(EntityInTextItalic, 0, text.size()));
-			result = HistoryMessage::create(this, m.vid.v, m.vflags.v, m.vreply_to_msg_id.v, m.vvia_bot_id.v, date(m.vdate), m.vfrom_id.v, text, entities);
+			result = HistoryMessage::create(this, m.vid.v, m.vflags.v, m.vreply_to_msg_id.v, m.vvia_bot_id.v, date(m.vdate), m.vfrom_id.v, { text, entities });
 		} else if (badMedia) {
 			result = HistoryService::create(this, m.vid.v, date(m.vdate), lang(lng_message_empty), m.vflags.v, m.has_from_id() ? m.vfrom_id.v : 0);
 		} else {
@@ -3094,26 +3095,25 @@ void HistoryItem::setId(MsgId newId) {
 }
 
 bool HistoryItem::canEdit(const QDateTime &cur) const {
-	int32 s = date.secsTo(cur);
-	auto channel = _history->peer->asChannel();
-	if (!channel || id < 0 || date.secsTo(cur) >= Global::EditTimeLimit()) return false;
+	if (id < 0 || date.secsTo(cur) >= Global::EditTimeLimit()) return false;
 
-	if (const HistoryMessage *msg = toHistoryMessage()) {
+	if (auto msg = toHistoryMessage()) {
 		if (msg->Has<HistoryMessageVia>() || msg->Has<HistoryMessageForwarded>()) return false;
 
 		if (HistoryMedia *media = msg->getMedia()) {
-			HistoryMediaType t = media->type();
-			if (t != MediaTypePhoto &&
-				t != MediaTypeVideo &&
-				t != MediaTypeFile &&
-				t != MediaTypeGif &&
-				t != MediaTypeMusicFile &&
-				t != MediaTypeVoiceFile &&
-				t != MediaTypeWebPage) {
+			auto type = media->type();
+			if (type != MediaTypePhoto &&
+				type != MediaTypeVideo &&
+				type != MediaTypeFile &&
+				type != MediaTypeGif &&
+				type != MediaTypeMusicFile &&
+				type != MediaTypeVoiceFile &&
+				type != MediaTypeWebPage) {
 				return false;
 			}
 		}
 		if (isPost()) {
+			auto channel = _history->peer->asChannel();
 			return (channel->amCreator() || (channel->amEditor() && out()));
 		}
 		return out();
@@ -3303,18 +3303,24 @@ int32 gifMaxStatusWidth(DocumentData *document) {
 	return result;
 }
 
-QString captionedSelectedText(const QString &attachType, const Text &caption, TextSelection selection) {
+TextWithEntities captionedSelectedText(const QString &attachType, const Text &caption, TextSelection selection) {
 	if (selection != FullSelection) {
-		return caption.original(selection, Text::ExpandLinksAll);
+		return caption.originalTextWithEntities(selection, ExpandLinksAll);
 	}
-	QString result;
-	result.reserve(5 + attachType.size() + caption.length());
-	result.append(qstr("[ ")).append(attachType).append(qstr(" ]"));
+
+	TextWithEntities result, original;
 	if (!caption.isEmpty()) {
-		result.append(qstr("\n")).append(caption.original(AllTextSelection));
+		original = caption.originalTextWithEntities(AllTextSelection, ExpandLinksAll);
+	}
+	result.text.reserve(5 + attachType.size() + original.text.size());
+	result.text.append(qstr("[ ")).append(attachType).append(qstr(" ]"));
+	if (!caption.isEmpty()) {
+		result.text.append(qstr("\n"));
+		appendTextWithEntities(result, std_::move(original));
 	}
 	return result;
 }
+
 } // namespace
 
 void HistoryFileMedia::clickHandlerActiveChanged(const ClickHandlerPtr &p, bool active) {
@@ -3734,10 +3740,10 @@ void HistoryPhoto::detachFromParent() {
 }
 
 QString HistoryPhoto::inDialogsText() const {
-	return _caption.isEmpty() ? lang(lng_in_dlg_photo) : _caption.original(AllTextSelection, Text::ExpandLinksNone);
+	return _caption.isEmpty() ? lang(lng_in_dlg_photo) : _caption.originalText(AllTextSelection, ExpandLinksNone);
 }
 
-QString HistoryPhoto::selectedText(TextSelection selection) const {
+TextWithEntities HistoryPhoto::selectedText(TextSelection selection) const {
 	return captionedSelectedText(lang(lng_in_dlg_photo), _caption, selection);
 }
 
@@ -3980,10 +3986,10 @@ void HistoryVideo::setStatusSize(int32 newSize) const {
 }
 
 QString HistoryVideo::inDialogsText() const {
-	return _caption.isEmpty() ? lang(lng_in_dlg_video) : _caption.original(AllTextSelection, Text::ExpandLinksNone);
+	return _caption.isEmpty() ? lang(lng_in_dlg_video) : _caption.originalText(AllTextSelection, ExpandLinksNone);
 }
 
-QString HistoryVideo::selectedText(TextSelection selection) const {
+TextWithEntities HistoryVideo::selectedText(TextSelection selection) const {
 	return captionedSelectedText(lang(lng_in_dlg_video), _caption, selection);
 }
 
@@ -4471,13 +4477,13 @@ QString HistoryDocument::inDialogsText() const {
 	}
 	if (auto captioned = Get<HistoryDocumentCaptioned>()) {
 		if (!captioned->_caption.isEmpty()) {
-			result.append(' ').append(captioned->_caption.original(AllTextSelection, Text::ExpandLinksNone));
+			result.append(' ').append(captioned->_caption.originalText(AllTextSelection, ExpandLinksNone));
 		}
 	}
 	return result;
 }
 
-QString HistoryDocument::selectedText(TextSelection selection) const {
+TextWithEntities HistoryDocument::selectedText(TextSelection selection) const {
 	const Text emptyCaption;
 	const Text *caption = &emptyCaption;
 	if (auto captioned = Get<HistoryDocumentCaptioned>()) {
@@ -4929,10 +4935,10 @@ HistoryTextState HistoryGif::getState(int x, int y, HistoryStateRequest request)
 }
 
 QString HistoryGif::inDialogsText() const {
-	return qsl("GIF") + (_caption.isEmpty() ? QString() : (' ' + _caption.original(AllTextSelection, Text::ExpandLinksNone)));
+	return qsl("GIF") + (_caption.isEmpty() ? QString() : (' ' + _caption.originalText(AllTextSelection, ExpandLinksNone)));
 }
 
-QString HistoryGif::selectedText(TextSelection selection) const {
+TextWithEntities HistoryGif::selectedText(TextSelection selection) const {
 	return captionedSelectedText(qsl("GIF"), _caption, selection);
 }
 
@@ -5249,11 +5255,11 @@ QString HistorySticker::inDialogsText() const {
 	return _emoji.isEmpty() ? lang(lng_in_dlg_sticker) : lng_in_dlg_sticker_emoji(lt_emoji, _emoji);
 }
 
-QString HistorySticker::selectedText(TextSelection selection) const {
+TextWithEntities HistorySticker::selectedText(TextSelection selection) const {
 	if (selection != FullSelection) {
-		return QString();
+		return TextWithEntities();
 	}
-	return qsl("[ ") + inDialogsText() + qsl(" ]");
+	return { qsl("[ ") + inDialogsText() + qsl(" ]"), EntitiesInText() };
 }
 
 void HistorySticker::attachToParent() {
@@ -5350,6 +5356,9 @@ void HistoryContact::initDimensions() {
 
 	if (_userId) {
 		_minh = st::msgFileThumbPadding.top() + st::msgFileThumbSize + st::msgFileThumbPadding.bottom();
+		if (_parent->Has<HistoryMessageSigned>()) {
+			_minh += st::msgDateFont->height - st::msgDateDelta.y();
+		}
 	} else {
 		_minh = st::msgFilePadding.top() + st::msgFileSize + st::msgFilePadding.bottom();
 	}
@@ -5434,11 +5443,11 @@ QString HistoryContact::inDialogsText() const {
 	return lang(lng_in_dlg_contact);
 }
 
-QString HistoryContact::selectedText(TextSelection selection) const {
+TextWithEntities HistoryContact::selectedText(TextSelection selection) const {
 	if (selection != FullSelection) {
-		return QString();
+		return TextWithEntities();
 	}
-	return qsl("[ ") + lang(lng_in_dlg_contact) + qsl(" ]\n") + _name.original() + '\n' + _phone;
+	return { qsl("[ ") + lang(lng_in_dlg_contact) + qsl(" ]\n") + _name.originalText() + '\n' + _phone, EntitiesInText() };
 }
 
 void HistoryContact::attachToParent() {
@@ -5955,18 +5964,21 @@ QString HistoryWebPage::inDialogsText() const {
 	return QString();
 }
 
-QString HistoryWebPage::selectedText(TextSelection selection) const {
+TextWithEntities HistoryWebPage::selectedText(TextSelection selection) const {
 	if (selection == FullSelection) {
-		return QString();
+		return TextWithEntities();
 	}
-	auto titleResult = _title.original(selection, Text::ExpandLinksAll);
-	auto descriptionResult = _description.original(toDescriptionSelection(selection), Text::ExpandLinksAll);
-	if (titleResult.isEmpty()) {
+	auto titleResult = _title.originalTextWithEntities(selection, ExpandLinksAll);
+	auto descriptionResult = _description.originalTextWithEntities(toDescriptionSelection(selection), ExpandLinksAll);
+	if (titleResult.text.isEmpty()) {
 		return descriptionResult;
-	} else if (descriptionResult.isEmpty()) {
+	} else if (descriptionResult.text.isEmpty()) {
 		return titleResult;
 	}
-	return titleResult + '\n' + descriptionResult;
+
+	titleResult.text += '\n';
+	appendTextWithEntities(titleResult, std_::move(descriptionResult));
+	return titleResult;
 }
 
 ImagePtr HistoryWebPage::replyPreview() {
@@ -6398,24 +6410,31 @@ TextSelection HistoryLocation::adjustSelection(TextSelection selection, TextSele
 }
 
 QString HistoryLocation::inDialogsText() const {
-	return _title.isEmpty() ? lang(lng_maps_point) : _title.original(AllTextSelection);
+	return _title.isEmpty() ? lang(lng_maps_point) : _title.originalText(AllTextSelection);
 }
 
-QString HistoryLocation::selectedText(TextSelection selection) const {
+TextWithEntities HistoryLocation::selectedText(TextSelection selection) const {
 	if (selection == FullSelection) {
-		auto result = qsl("[ ") + lang(lng_maps_point) + qsl(" ]\n");
+		TextWithEntities result = { qsl("[ ") + lang(lng_maps_point) + qsl(" ]\n"), EntitiesInText() };
 		auto info = selectedText(AllTextSelection);
-		if (!info.isEmpty()) result.append(info).append('\n');
-		return result + _link->text();
+		if (!info.text.isEmpty()) {
+			appendTextWithEntities(result, std_::move(info));
+			result.text.append('\n');
+		}
+		result.text += _link->dragText();
+		return result;
 	}
-	auto titleResult = _title.original(selection);
-	auto descriptionResult = _description.original(toDescriptionSelection(selection));
-	if (titleResult.isEmpty()) {
+
+	auto titleResult = _title.originalTextWithEntities(selection);
+	auto descriptionResult = _description.originalTextWithEntities(toDescriptionSelection(selection));
+	if (titleResult.text.isEmpty()) {
 		return descriptionResult;
-	} else if (descriptionResult.isEmpty()) {
+	} else if (descriptionResult.text.isEmpty()) {
 		return titleResult;
 	}
-	return titleResult + '\n' + descriptionResult;
+	titleResult.text += '\n';
+	appendTextWithEntities(titleResult, std_::move(descriptionResult));
+	return titleResult;
 }
 
 int32 HistoryLocation::fullWidth() const {
@@ -6464,8 +6483,15 @@ int HistoryMessageSigned::maxWidth() const {
 	return _signature.maxWidth();
 }
 
-void HistoryMessageEdited::create(const QDateTime &editDate) {
+void HistoryMessageEdited::create(const QDateTime &editDate, const QDateTime &date) {
 	_editDate = editDate;
+
+	QString time = date.toString(cTimeFormat());
+	_edited.setText(st::msgDateFont, lang(lng_edited) + ' ' + time, _textNameOptions);
+}
+
+int HistoryMessageEdited::maxWidth() const {
+	return _edited.maxWidth();
 }
 
 void HistoryMessageForwarded::create(const HistoryMessageVia *via) const {
@@ -6720,9 +6746,41 @@ HistoryMessage::HistoryMessage(History *history, const MTPDmessage &msg)
 	createComponents(config);
 
 	QString text(textClean(qs(msg.vmessage)));
-	initMedia(msg.has_media() ? (&msg.vmedia) : 0, text);
-	setText(text, msg.has_entities() ? entitiesFromMTP(msg.ventities.c_vector().v) : EntitiesInText());
+	initMedia(msg.has_media() ? (&msg.vmedia) : nullptr, text);
+
+	TextWithEntities textWithEntities = { text, EntitiesInText() };
+	if (msg.has_entities()) {
+		textWithEntities.entities = entitiesFromMTP(msg.ventities.c_vector().v);
+	}
+	setText(textWithEntities);
 }
+
+namespace {
+
+MTPDmessage::Flags newForwardedFlags(PeerData *p, int32 from, HistoryMessage *fwd) {
+	MTPDmessage::Flags result = newMessageFlags(p) | MTPDmessage::Flag::f_fwd_from;
+	if (from) {
+		result |= MTPDmessage::Flag::f_from_id;
+	}
+	if (fwd->Has<HistoryMessageVia>()) {
+		result |= MTPDmessage::Flag::f_via_bot_id;
+	}
+	if (!p->isChannel()) {
+		if (HistoryMedia *media = fwd->getMedia()) {
+			if (media->type() == MediaTypeVoiceFile) {
+				result |= MTPDmessage::Flag::f_media_unread;
+//			} else if (media->type() == MediaTypeVideo) {
+//				result |= MTPDmessage::flag_media_unread;
+			}
+		}
+	}
+	if (fwd->hasViews()) {
+		result |= MTPDmessage::Flag::f_views;
+	}
+	return result;
+}
+
+} // namespace
 
 HistoryMessage::HistoryMessage(History *history, MsgId id, MTPDmessage::Flags flags, QDateTime date, int32 from, HistoryMessage *fwd)
 : HistoryItem(history, id, newForwardedFlags(history->peer, from, fwd) | flags, date, from) {
@@ -6755,14 +6813,14 @@ HistoryMessage::HistoryMessage(History *history, MsgId id, MTPDmessage::Flags fl
 	if (HistoryMedia *mediaOriginal = fwd->getMedia()) {
 		_media.reset(mediaOriginal->clone(this));
 	}
-	setText(fwd->originalText(), fwd->originalEntities());
+	setText(fwd->originalText());
 }
 
-HistoryMessage::HistoryMessage(History *history, MsgId id, MTPDmessage::Flags flags, MsgId replyTo, int32 viaBotId, QDateTime date, int32 from, const QString &msg, const EntitiesInText &entities)
+HistoryMessage::HistoryMessage(History *history, MsgId id, MTPDmessage::Flags flags, MsgId replyTo, int32 viaBotId, QDateTime date, int32 from, const TextWithEntities &textWithEntities)
 : HistoryItem(history, id, flags, date, (flags & MTPDmessage::Flag::f_from_id) ? from : 0) {
 	createComponentsHelper(flags, replyTo, viaBotId, MTPnullMarkup);
 
-	setText(msg, entities);
+	setText(textWithEntities);
 }
 
 HistoryMessage::HistoryMessage(History *history, MsgId msgId, MTPDmessage::Flags flags, MsgId replyTo, int32 viaBotId, QDateTime date, int32 from, DocumentData *doc, const QString &caption, const MTPReplyMarkup &markup)
@@ -6770,7 +6828,7 @@ HistoryMessage::HistoryMessage(History *history, MsgId msgId, MTPDmessage::Flags
 	createComponentsHelper(flags, replyTo, viaBotId, markup);
 
 	initMediaFromDocument(doc, caption);
-	setText(QString(), EntitiesInText());
+	setText(TextWithEntities());
 }
 
 HistoryMessage::HistoryMessage(History *history, MsgId msgId, MTPDmessage::Flags flags, MsgId replyTo, int32 viaBotId, QDateTime date, int32 from, PhotoData *photo, const QString &caption, const MTPReplyMarkup &markup)
@@ -6778,7 +6836,7 @@ HistoryMessage::HistoryMessage(History *history, MsgId msgId, MTPDmessage::Flags
 	createComponentsHelper(flags, replyTo, viaBotId, markup);
 
 	_media.reset(new HistoryPhoto(this, photo, caption));
-	setText(QString(), EntitiesInText());
+	setText(TextWithEntities());
 }
 
 void HistoryMessage::createComponentsHelper(MTPDmessage::Flags flags, MsgId replyTo, int32 viaBotId, const MTPReplyMarkup &markup) {
@@ -6827,7 +6885,7 @@ void HistoryMessage::createComponents(const CreateConfig &config) {
 	if (auto reply = Get<HistoryMessageReply>()) {
 		reply->replyToMsgId = config.replyTo;
 		if (!reply->updateData(this) && App::api()) {
-			App::api()->requestMessageData(history()->peer->asChannel(), reply->replyToMsgId, new HistoryDependentItemCallback(fullId()));
+			App::api()->requestMessageData(history()->peer->asChannel(), reply->replyToMsgId, std_::make_unique<HistoryDependentItemCallback>(fullId()));
 		}
 	}
 	if (auto via = Get<HistoryMessageVia>()) {
@@ -6840,7 +6898,7 @@ void HistoryMessage::createComponents(const CreateConfig &config) {
 		msgsigned->create(_from->asUser(), date);
 	}
 	if (auto edited = Get<HistoryMessageEdited>()) {
-		edited->create(config.editDate);
+		edited->create(config.editDate, date);
 	}
 	if (auto fwd = Get<HistoryMessageForwarded>()) {
 		fwd->_authorOriginal = App::peer(config.authorIdOriginal);
@@ -6962,12 +7020,12 @@ void HistoryMessage::initDimensions() {
 			if (_media->isDisplayed()) {
 				if (_text.hasSkipBlock()) {
 					_text.removeSkipBlock();
-					_textWidth = 0;
+					_textWidth = -1;
 					_textHeight = 0;
 				}
 			} else if (!_text.hasSkipBlock()) {
 				_text.setSkipBlock(skipBlockWidth(), skipBlockHeight());
-				_textWidth = 0;
+				_textWidth = -1;
 				_textHeight = 0;
 			}
 		}
@@ -7071,16 +7129,23 @@ void HistoryMessage::applyEdition(const MTPDmessage &message) {
 		}
 	}
 
-	EntitiesInText entities;
-	if (message.has_entities()) {
-		entities = entitiesFromMTP(message.ventities.c_vector().v);
+	if (message.has_edit_date()) {
+		_flags |= MTPDmessage::Flag::f_edit_date;
+		if (!Has<HistoryMessageEdited>()) {
+			AddComponents(HistoryMessageEdited::Bit());
+		}
+		Get<HistoryMessageEdited>()->create(::date(message.vedit_date), date);
+		initTime();
 	}
 
-	setText(qs(message.vmessage), entities);
+	TextWithEntities textWithEntities = { qs(message.vmessage), EntitiesInText() };
+	if (message.has_entities()) {
+		textWithEntities.entities = entitiesFromMTP(message.ventities.c_vector().v);
+	}
+	setText(textWithEntities);
 	setMedia(message.has_media() ? (&message.vmedia) : nullptr);
 	setReplyMarkup(message.has_reply_markup() ? (&message.vreply_markup) : nullptr);
 	setViewsCount(message.has_views() ? message.vviews.v : -1);
-	if (message.has_edit_date()) setEditDate(::date(message.vedit_date));
 
 	setPendingInitDimensions();
 	if (App::main()) {
@@ -7097,6 +7162,8 @@ void HistoryMessage::applyEdition(const MTPDmessage &message) {
 			keyboard->oldTop = keyboardTop;
 		}
 	}
+
+	App::historyUpdateDependent(this);
 }
 
 void HistoryMessage::updateMedia(const MTPMessageMedia *media) {
@@ -7149,36 +7216,44 @@ void HistoryMessage::eraseFromOverview() {
 	}
 }
 
-QString HistoryMessage::selectedText(TextSelection selection) const {
-	QString result, textResult, mediaResult;
+TextWithEntities HistoryMessage::selectedText(TextSelection selection) const {
+	TextWithEntities result, textResult, mediaResult;
 	if (selection == FullSelection) {
-		textResult = _text.original(AllTextSelection, Text::ExpandLinksAll);
+		textResult = _text.originalTextWithEntities(AllTextSelection, ExpandLinksAll);
 	} else {
-		textResult = _text.original(selection, Text::ExpandLinksAll);
+		textResult = _text.originalTextWithEntities(selection, ExpandLinksAll);
 	}
 	if (_media) {
 		mediaResult = _media->selectedText(toMediaSelection(selection));
 	}
-	if (textResult.isEmpty()) {
+	if (textResult.text.isEmpty()) {
 		result = mediaResult;
-	} else if (mediaResult.isEmpty()) {
+	} else if (mediaResult.text.isEmpty()) {
 		result = textResult;
 	} else {
-		result = textResult + qstr("\n\n") + mediaResult;
+		result.text = textResult.text + qstr("\n\n");
+		result.entities = textResult.entities;
+		appendTextWithEntities(result, std_::move(mediaResult));
 	}
 	if (auto fwd = Get<HistoryMessageForwarded>()) {
 		if (selection == FullSelection) {
-			QString fwdinfo = fwd->_text.original(AllTextSelection, Text::ExpandLinksAll), wrapped;
-			wrapped.reserve(fwdinfo.size() + 4 + result.size());
-			wrapped.append('[').append(fwdinfo).append(qsl("]\n")).append(result);
+			auto fwdinfo = fwd->_text.originalTextWithEntities(AllTextSelection, ExpandLinksAll);
+			TextWithEntities wrapped;
+			wrapped.text.reserve(fwdinfo.text.size() + 4 + result.text.size());
+			wrapped.entities.reserve(fwdinfo.entities.size() + result.entities.size());
+			wrapped.text.append('[');
+			appendTextWithEntities(wrapped, std_::move(fwdinfo));
+			wrapped.text.append(qsl("]\n"));
+			appendTextWithEntities(wrapped, std_::move(result));
 			result = wrapped;
 		}
 	}
 	if (auto reply = Get<HistoryMessageReply>()) {
 		if (selection == FullSelection && reply->replyToMsg) {
-			QString wrapped;
-			wrapped.reserve(lang(lng_in_reply_to).size() + reply->replyToMsg->author()->name.size() + 4 + result.size());
-			wrapped.append('[').append(lang(lng_in_reply_to)).append(' ').append(reply->replyToMsg->author()->name).append(qsl("]\n")).append(result);
+			TextWithEntities wrapped;
+			wrapped.text.reserve(lang(lng_in_reply_to).size() + reply->replyToMsg->author()->name.size() + 4 + result.text.size());
+			wrapped.text.append('[').append(lang(lng_in_reply_to)).append(' ').append(reply->replyToMsg->author()->name).append(qsl("]\n"));
+			appendTextWithEntities(wrapped, std_::move(result));
 			result = wrapped;
 		}
 	}
@@ -7186,7 +7261,7 @@ QString HistoryMessage::selectedText(TextSelection selection) const {
 }
 
 QString HistoryMessage::inDialogsText() const {
-	return emptyText() ? (_media ? _media->inDialogsText() : QString()) : _text.original(AllTextSelection, Text::ExpandLinksNone);
+	return emptyText() ? (_media ? _media->inDialogsText() : QString()) : _text.originalText(AllTextSelection, ExpandLinksNone);
 }
 
 HistoryMedia *HistoryMessage::getMedia() const {
@@ -7205,31 +7280,32 @@ void HistoryMessage::setMedia(const MTPMessageMedia *media) {
 	initMedia(media, t);
 	if (_media && _media->isDisplayed() && !mediaWasDisplayed) {
 		_text.removeSkipBlock();
-		_textWidth = 0;
+		_textWidth = -1;
 		_textHeight = 0;
 	} else if (mediaWasDisplayed && (!_media || !_media->isDisplayed())) {
 		_text.setSkipBlock(skipBlockWidth(), skipBlockHeight());
-		_textWidth = 0;
+		_textWidth = -1;
 		_textHeight = 0;
 	}
 }
 
-void HistoryMessage::setText(const QString &text, const EntitiesInText &entities) {
+void HistoryMessage::setText(const TextWithEntities &textWithEntities) {
 	textstyleSet(&((out() && !isPost()) ? st::outTextStyle : st::inTextStyle));
 	if (_media && _media->isDisplayed()) {
-		_text.setMarkedText(st::msgFont, text, entities, itemTextOptions(this));
+		_text.setMarkedText(st::msgFont, textWithEntities, itemTextOptions(this));
 	} else {
-		_text.setMarkedText(st::msgFont, text + skipBlock(), entities, itemTextOptions(this));
+		_text.setMarkedText(st::msgFont, { textWithEntities.text + skipBlock(), textWithEntities.entities }, itemTextOptions(this));
 	}
 	textstyleRestore();
 
-	for (int32 i = 0, l = entities.size(); i != l; ++i) {
-		if (entities.at(i).type == EntityInTextUrl || entities.at(i).type == EntityInTextCustomUrl || entities.at(i).type == EntityInTextEmail) {
+	for_const (auto &entity, textWithEntities.entities) {
+		auto type = entity.type();
+		if (type == EntityInTextUrl || type == EntityInTextCustomUrl || type == EntityInTextEmail) {
 			_flags |= MTPDmessage_ClientFlag::f_has_text_links;
 			break;
 		}
 	}
-	_textWidth = 0;
+	_textWidth = -1;
 	_textHeight = 0;
 }
 
@@ -7277,15 +7353,14 @@ void HistoryMessage::setReplyMarkup(const MTPReplyMarkup *markup) {
 	}
 }
 
-QString HistoryMessage::originalText() const {
-	return emptyText() ? QString() : _text.original();
+TextWithEntities HistoryMessage::originalText() const {
+	if (emptyText()) {
+		return { QString(), EntitiesInText() };
+	}
+	return _text.originalTextWithEntities();
 }
 
-EntitiesInText HistoryMessage::originalEntities() const {
-	return emptyText() ? EntitiesInText() : _text.originalEntities();
-}
-
-bool HistoryMessage::textHasLinks() {
+bool HistoryMessage::textHasLinks() const {
 	return emptyText() ? false : _text.hasLinks();
 }
 
@@ -7398,25 +7473,7 @@ void HistoryMessage::setViewsCount(int32 count) {
 	} else {
 		if (_text.hasSkipBlock()) {
 			_text.setSkipBlock(HistoryMessage::skipBlockWidth(), HistoryMessage::skipBlockHeight());
-			_textWidth = 0;
-			_textHeight = 0;
-		}
-		setPendingInitDimensions();
-	}
-}
-
-void HistoryMessage::setEditDate(const QDateTime newDate) {
-	bool was = Has<HistoryMessageEdited>();
-	if (!was) {
-		AddComponents(HistoryMessageEdited::Bit());
-	}
-	auto editDate = Get<HistoryMessageEdited>();
-	if (editDate->_editDate > newDate || editDate->_editDate == newDate) return;
-	editDate->create(newDate);
-	if (!was) {
-		if (_text.hasSkipBlock()) {
-			_text.setSkipBlock(HistoryMessage::skipBlockWidth(), HistoryMessage::skipBlockHeight());
-			_textWidth = 0;
+			_textWidth = -1;
 			_textHeight = 0;
 		}
 		setPendingInitDimensions();
@@ -7431,7 +7488,7 @@ void HistoryMessage::setId(MsgId newId) {
 	} else {
 		if (_text.hasSkipBlock()) {
 			_text.setSkipBlock(HistoryMessage::skipBlockWidth(), HistoryMessage::skipBlockHeight());
-			_textWidth = 0;
+			_textWidth = -1;
 			_textHeight = 0;
 		}
 		setPendingInitDimensions();
@@ -8122,7 +8179,6 @@ bool HistoryService::updatePinned(bool force) {
 		updatePinnedText();
 	}
 	if (force) {
-		setPendingInitDimensions();
 		if (gotDependencyItem && App::wnd()) {
 			App::wnd()->notifySettingGot();
 		}
@@ -8156,7 +8212,7 @@ bool HistoryService::updatePinnedText(const QString *pfrom, QString *ptext) {
 		case MediaTypeVoiceFile: mediaText = lang(lng_action_pinned_media_voice); break;
 		}
 		if (mediaText.isEmpty()) {
-			QString original = pinned->msg->originalText();
+			QString original = pinned->msg->originalText().text;
 			int32 cutat = 0, limit = PinnedMessageTextLimit, size = original.size();
 			for (; limit > 0;) {
 				--limit;
@@ -8208,7 +8264,7 @@ HistoryService::HistoryService(History *history, const MTPDmessageService &msg) 
 		UpdateComponents(HistoryServicePinned::Bit());
 		MsgId pinnedMsgId = Get<HistoryServicePinned>()->msgId = msg.vreply_to_msg_id.v;
 		if (!updatePinned() && App::api()) {
-			App::api()->requestMessageData(history->peer->asChannel(), pinnedMsgId, new HistoryDependentItemCallback(fullId()));
+			App::api()->requestMessageData(history->peer->asChannel(), pinnedMsgId, std_::make_unique<HistoryDependentItemCallback>(fullId()));
 		}
 	}
 	setMessageByAction(msg.vaction);
@@ -8234,12 +8290,12 @@ void HistoryService::countPositionAndSize(int32 &left, int32 &width) const {
 	width = maxwidth - st::msgServiceMargin.left() - st::msgServiceMargin.left();
 }
 
-QString HistoryService::selectedText(TextSelection selection) const {
-	return _text.original((selection == FullSelection) ? AllTextSelection : selection);
+TextWithEntities HistoryService::selectedText(TextSelection selection) const {
+	return _text.originalTextWithEntities((selection == FullSelection) ? AllTextSelection : selection);
 }
 
 QString HistoryService::inDialogsText() const {
-	return _text.original(AllTextSelection, Text::ExpandLinksNone);
+	return _text.originalText(AllTextSelection, ExpandLinksNone);
 }
 
 QString HistoryService::inReplyText() const {
@@ -8251,7 +8307,9 @@ void HistoryService::setServiceText(const QString &text) {
 	textstyleSet(&st::serviceTextStyle);
 	_text.setText(st::msgServiceFont, text, _historySrvOptions);
 	textstyleRestore();
-	initDimensions();
+	setPendingInitDimensions();
+	_textWidth = -1;
+	_textHeight = 0;
 }
 
 void HistoryService::draw(Painter &p, const QRect &r, TextSelection selection, uint64 ms) const {
@@ -8421,7 +8479,7 @@ void HistoryService::drawInDialog(Painter &p, const QRect &r, bool act, const Hi
 }
 
 QString HistoryService::notificationText() const {
-    QString msg = _text.original();
+    QString msg = _text.originalText();
     if (msg.size() > 0xFF) msg = msg.mid(0, 0xFF) + qsl("...");
     return msg;
 }

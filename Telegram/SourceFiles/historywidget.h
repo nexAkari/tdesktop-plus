@@ -24,6 +24,14 @@ Copyright (c) 2014-2016 John Preston, https://desktop.telegram.org
 #include "ui/boxshadow.h"
 #include "dropdown.h"
 #include "history/history_common.h"
+#include "history/field_autocomplete.h"
+
+namespace InlineBots {
+namespace Layout {
+class ItemBase;
+} // namespace Layout
+class Result;
+} // namespace InlineBots
 
 class HistoryWidget;
 class HistoryInner : public TWidget, public AbstractTooltipShower {
@@ -49,7 +57,7 @@ public:
 	void keyPressEvent(QKeyEvent *e) override;
 	void showContextMenu(QContextMenuEvent *e, bool showFromTouch = false);
 
-	QString getSelectedText() const;
+	TextWithEntities getSelectedText() const;
 
 	void dragActionStart(const QPoint &screenPos, Qt::MouseButton button = Qt::LeftButton);
 	void dragActionUpdate(const QPoint &screenPos);
@@ -135,6 +143,8 @@ private:
 	HistoryItem *prevItem(HistoryItem *item);
 	HistoryItem *nextItem(HistoryItem *item);
 	void updateDragSelection(HistoryItem *dragSelFrom, HistoryItem *dragSelTo, bool dragSelecting, bool force = false);
+
+	void setToClipboard(const TextWithEntities &forClipboard);
 
 	PeerData *_peer = nullptr;
 	History *_migrated = nullptr;
@@ -478,17 +488,8 @@ public:
 
 };
 
-enum TextUpdateEventsFlags {
-	TextUpdateEventsSaveDraft  = 0x01,
-	TextUpdateEventsSendTyping = 0x02,
-};
-
-namespace InlineBots {
-namespace Layout {
-class ItemBase;
-} // namespace Layout
-class Result;
-} // namespace InlineBots
+EntitiesInText entitiesFromTextTags(const TextWithTags::Tags &tags);
+TextWithTags::Tags textTagsFromEntities(const EntitiesInText &entities);
 
 class HistoryWidget : public TWidget, public RPCSender {
 	Q_OBJECT
@@ -547,7 +548,6 @@ public:
 	void destroyData();
 
 	void updateFieldPlaceholder();
-	void updateInlineBotQuery();
 	void updateStickersByEmoji();
 
 	void uploadImage(const QImage &img, PrepareMediaType type, FileLoadForceConfirmType confirm = FileLoadNoForceConfirm, const QString &source = QString(), bool withText = false);
@@ -760,7 +760,6 @@ public slots:
 
 	void activate();
 	void onStickersUpdated();
-	void onMentionHashtagOrBotCommandInsert(QString str);
 	void onTextChange();
 
 	void onFieldTabbed();
@@ -778,7 +777,7 @@ public slots:
 
 	void onFieldFocused();
 	void onFieldResize();
-	void onCheckMentionDropdown();
+	void onCheckFieldAutocomplete();
 	void onScrollTimer();
 
 	void onForwardSelected();
@@ -793,7 +792,6 @@ public slots:
 	void onDraftSave(bool delayed = false);
 
 	void updateStickers();
-	void updateField();
 
 	void onRecordError();
 	void onRecordDone(QByteArray result, VoiceWaveform waveform, qint32 samples);
@@ -807,7 +805,11 @@ public slots:
 
 private slots:
 
+	void onHashtagOrBotCommandInsert(QString str, FieldAutocomplete::ChooseMethod method);
+	void onMentionInsert(UserData *user);
 	void onInlineBotCancel();
+
+	void updateField();
 
 private:
 
@@ -819,6 +821,12 @@ private:
 	void clearInlineBot();
 	void inlineBotChanged();
 
+	// Look in the _field for the inline bot and query string.
+	void updateInlineBotQuery();
+
+	// Request to show results in the emoji panel.
+	void applyInlineBotQuery(UserData *bot, const QString &query);
+
 	MsgId _replyToId = 0;
 	Text _replyToName;
 	int _replyToNameVersion = 0;
@@ -828,6 +836,7 @@ private:
 
 	HistoryItem *_replyEditMsg = nullptr;
 	Text _replyEditMsgText;
+	mutable SingleTimer _updateEditTimeLeftDisplay;
 
 	IconedButton _fieldBarCancel;
 	void updateReplyEditTexts(bool force = false);
@@ -856,7 +865,8 @@ private:
 	void sendExistingDocument(DocumentData *doc, const QString &caption);
 	void sendExistingPhoto(PhotoData *photo, const QString &caption);
 
-	void drawField(Painter &p);
+	void drawField(Painter &p, const QRect &rect);
+	void paintEditHeader(Painter &p, const QRect &rect, int left, int top) const;
 	void drawRecordButton(Painter &p);
 	void drawRecording(Painter &p);
 	void drawPinnedBar(Painter &p);
@@ -952,11 +962,18 @@ private:
 	void savedGifsGot(const MTPmessages_SavedGifs &gifs);
 	bool savedGifsFailed(const RPCError &error);
 
+	enum class TextUpdateEvent {
+		SaveDraft  = 0x01,
+		SendTyping = 0x02,
+	};
+	Q_DECLARE_FLAGS(TextUpdateEvents, TextUpdateEvent);
+	Q_DECLARE_FRIEND_OPERATORS_FOR_FLAGS(TextUpdateEvents);
+
 	void writeDrafts(HistoryDraft **msgDraft, HistoryEditDraft **editDraft);
 	void writeDrafts(History *history);
-	void setFieldText(const QString &text, int32 textUpdateEventsFlags = 0, bool clearUndoHistory = true);
-	void clearFieldText(int32 textUpdateEventsFlags = 0, bool clearUndoHistory = true) {
-		setFieldText(QString());
+	void setFieldText(const TextWithTags &textWithTags, TextUpdateEvents events = 0, FlatTextarea::UndoHistoryAction undoHistoryAction = FlatTextarea::ClearUndoHistory);
+	void clearFieldText(TextUpdateEvents events = 0, FlatTextarea::UndoHistoryAction undoHistoryAction = FlatTextarea::ClearUndoHistory) {
+		setFieldText(TextWithTags(), events, undoHistoryAction);
 	}
 
 	QStringList getMediasFromMime(const QMimeData *d);
@@ -1005,7 +1022,7 @@ private:
 	IconedButton _toHistoryEnd;
 	CollapseButton _collapseComments;
 
-	MentionsDropdown _attachMention;
+	ChildWidget<FieldAutocomplete> _fieldAutocomplete;
 
 	UserData *_inlineBot = nullptr;
 	QString _inlineBotUsername;
@@ -1060,7 +1077,7 @@ private:
 	int32 _selCount; // < 0 - text selected, focus list, not _field
 
 	TaskQueue _fileLoader;
-	int32 _textUpdateEventsFlags = (TextUpdateEventsSaveDraft | TextUpdateEventsSendTyping);
+	TextUpdateEvents _textUpdateEvents = (TextUpdateEvent::SaveDraft | TextUpdateEvent::SendTyping);
 
 	int64 _serviceImageCacheSize = 0;
 	QString _confirmSource;
@@ -1093,3 +1110,4 @@ private:
 
 };
 
+Q_DECLARE_OPERATORS_FOR_FLAGS(HistoryWidget::TextUpdateEvents)
