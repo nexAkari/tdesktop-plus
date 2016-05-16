@@ -229,7 +229,7 @@ void NotifyWindow::updateNotifyDisplay() {
 			history->peer->dialogName().drawElided(p, rectForName.left(), rectForName.top(), rectForName.width());
 		} else {
 			p.setFont(st::msgNameFont->f);
-			static QString notifyTitle = st::msgNameFont->elided(QString::fromWCharArray(AppName), rectForName.width());
+			static QString notifyTitle = st::msgNameFont->elided(str_const_toString(AppName), rectForName.width());
 			p.drawText(rectForName.left(), rectForName.top() + st::msgNameFont->ascent, notifyTitle);
 		}
 	}
@@ -1113,7 +1113,7 @@ bool MainWindow::minimizeToTray() {
 
 	hide();
     if (cPlatform() == dbipWindows && trayIcon && !cSeenTrayTooltip()) {
-		trayIcon->showMessage(QString::fromStdWString(AppName), lang(lng_tray_icon_text), QSystemTrayIcon::Information, 10000);
+		trayIcon->showMessage(str_const_toString(AppName), lang(lng_tray_icon_text), QSystemTrayIcon::Information, 10000);
 		cSetSeenTrayTooltip(true);
 		Local::writeSettings();
 	}

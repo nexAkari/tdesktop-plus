@@ -105,7 +105,7 @@ void AboutBox::paintEvent(QPaintEvent *e) {
 	Painter p(this);
 	if (paint(p)) return;
 
-	paintTitle(p, QString::fromStdWString(AppName));
+	paintTitle(p, str_const_toString(AppName));
 }
 
 #ifndef TDESKTOP_DISABLE_CRASH_REPORTS

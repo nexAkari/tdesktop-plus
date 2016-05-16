@@ -48,7 +48,7 @@ IntroStart::IntroStart(IntroWidget *parent) : IntroStep(parent)
 		_changeLang.show();
 	}
 
-	_headerWidth = st::introHeaderFont->width(QString::fromWCharArray(AppName));
+	_headerWidth = st::introHeaderFont->width(str_const_toString(AppName));
 
 	setGeometry(parent->innerRect());
 
@@ -70,7 +70,7 @@ void IntroStart::paintEvent(QPaintEvent *e) {
 
 	p.setFont(st::introHeaderFont->f);
 	p.setPen(st::introColor->p);
-	p.drawText((width() - _headerWidth) / 2, hy, QString::fromWCharArray(AppName));
+	p.drawText((width() - _headerWidth) / 2, hy, str_const_toString(AppName));
 
 	p.drawSprite(QPoint((width() - st::aboutIcon.pxWidth()) / 2, hy - st::introIconSkip - st::aboutIcon.pxHeight()), st::aboutIcon);
 }
