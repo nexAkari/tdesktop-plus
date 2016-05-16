@@ -273,7 +273,7 @@ void PhotoSendBox::paintEvent(QPaintEvent *e) {
 
 			p.drawSpriteCenter(inner, _isImage ? st::msgFileOutImage : st::msgFileOutFile);
 		} else {
-			p.drawPixmapLeft(x + st::msgFilePadding.left(), y + st::msgFilePadding.top(), width(), userDefPhoto(1)->pixCircled(st::msgFileSize));
+			p.drawPixmapLeft(x + st::msgFilePadding.left(), y + st::msgFilePadding.top(), width(), peerDefPhoto(1)->pixCircled(st::msgFileSize));
 		}
 		p.setFont(st::semiboldFont);
 		p.setPen(st::black);

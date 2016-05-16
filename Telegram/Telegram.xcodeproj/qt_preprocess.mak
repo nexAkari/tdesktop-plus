@@ -138,22 +138,14 @@ GeneratedFiles/qrc_telegram.cpp: Resources/telegram.qrc \
 		Resources/art/blank.gif \
 		Resources/art/icon256.png \
 		Resources/art/iconbig256.png \
-		Resources/art/chatcolor1.png \
-		Resources/art/chatcolor2.png \
-		Resources/art/chatcolor3.png \
-		Resources/art/chatcolor4.png \
-		Resources/art/channelcolor1.png \
-		Resources/art/channelcolor2.png \
-		Resources/art/channelcolor3.png \
-		Resources/art/channelcolor4.png \
-		Resources/art/usercolor1.png \
-		Resources/art/usercolor2.png \
-		Resources/art/usercolor3.png \
-		Resources/art/usercolor4.png \
-		Resources/art/usercolor5.png \
-		Resources/art/usercolor6.png \
-		Resources/art/usercolor7.png \
-		Resources/art/usercolor8.png \
+		Resources/art/peercolor1.png \
+		Resources/art/peercolor2.png \
+		Resources/art/peercolor3.png \
+		Resources/art/peercolor4.png \
+		Resources/art/peercolor5.png \
+		Resources/art/peercolor6.png \
+		Resources/art/peercolor7.png \
+		Resources/art/peercolor8.png \
 		Resources/qmime/freedesktop.org.xml \
 		Resources/langs/lang_it.strings \
 		Resources/langs/lang_es.strings \

@@ -144,10 +144,12 @@ ImagePtr ItemBase::getResultThumb() const {
 }
 
 QPixmap ItemBase::getResultContactAvatar(int width, int height) const {
+	QPixmap ret;
 	if (_result->_type == Result::Type::Contact) {
-		return userDefPhoto(qHash(_result->_id) % UserColorsCount)->pixCircled(width, height);
+		ret = peerDefPhoto(qHash(_result->_id) % PeerColorsCount)->pixCircled(width, height);
+		drawInitialsPixmap(&ret, initialsByName(_result->_title));
 	}
-	return QPixmap();
+	return ret;
 }
 
 int ItemBase::getResultDuration() const {

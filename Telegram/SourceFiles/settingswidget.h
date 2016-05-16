@@ -73,15 +73,13 @@ public:
 
 	void updateAdaptiveLayout();
 
-	void step_photo(float64 ms, bool timer);
-
 	void updateSize(int32 newWidth);
 
 	void updateOnlineDisplay();
 
 	void showAll();
 
-    void chooseCustomLang();
+	void chooseCustomLang();
 
 	void updateChatBackground();
 	void needBackgroundUpdate(bool tile);
@@ -189,7 +187,6 @@ public slots:
 
 	// Plus Settings
 	void onDropdownOnTab();
-	void onRoundedUserpics();
 	void onReplaceDoubles();
 
 private:
@@ -215,8 +212,6 @@ private:
 	FlatButton _uploadPhoto;
 	LinkButton _cancelPhoto;
 	bool _nameOver, _photoOver;
-	anim::fvalue a_photoOver;
-	Animation _a_photo;
 
 	QString _errorText;
 
@@ -233,7 +228,7 @@ private:
 	FlatCheckbox _autoUpdate;
 	LinkButton _checkNow, _restartNow;
 	#endif
-    bool _supportTray; // cSupportTray() value on settings create
+	bool _supportTray; // cSupportTray() value on settings create
 	FlatCheckbox _workmodeTray, _workmodeWindow;
 	FlatCheckbox _autoStart, _startMinimized, _sendToMenu;
 	FlatCheckbox _dpiAutoScale;
@@ -305,7 +300,6 @@ private:
 
 	// Plus Settings
 	FlatCheckbox _dropdownOnTab;
-	FlatCheckbox _roundedUserpics;
 	FlatCheckbox _replaceDoubles;
 
 	void gotPassword(const MTPaccount_Password &result);

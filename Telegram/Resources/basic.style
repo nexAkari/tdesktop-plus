@@ -2498,3 +2498,6 @@ infoButton: PeerAvatarButton {
 	size: topBarHeight;
 	photoSize: 42px;
 }
+
+initialsCoef: 0.4;  // fontSize / picSize
+initialsFont: normalFont;
