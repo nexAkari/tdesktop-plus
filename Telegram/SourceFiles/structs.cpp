@@ -61,39 +61,20 @@ style::color peerColor(int index) {
 	return peerColors[index];
 }
 
-ImagePtr userDefPhoto(int index) {
-	static const ImagePtr userDefPhotos[UserColorsCount] = {
-		ImagePtr(qsl(":/ava/art/usercolor1.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/usercolor2.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/usercolor3.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/usercolor4.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/usercolor5.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/usercolor6.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/usercolor7.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/usercolor8.png"), "PNG"),
+ImagePtr peerDefPhoto(int index) {
+	static const ImagePtr peerDefPhotos[8] = {
+		ImagePtr(qsl(":/ava/art/peercolor1.png"), "PNG"),
+		ImagePtr(qsl(":/ava/art/peercolor2.png"), "PNG"),
+		ImagePtr(qsl(":/ava/art/peercolor3.png"), "PNG"),
+		ImagePtr(qsl(":/ava/art/peercolor4.png"), "PNG"),
+		ImagePtr(qsl(":/ava/art/peercolor5.png"), "PNG"),
+		ImagePtr(qsl(":/ava/art/peercolor6.png"), "PNG"),
+		ImagePtr(qsl(":/ava/art/peercolor7.png"), "PNG"),
+		ImagePtr(qsl(":/ava/art/peercolor8.png"), "PNG"),
 	};
-	return userDefPhotos[index];
+	return peerDefPhotos[index];
 }
 
-ImagePtr chatDefPhoto(int index) {
-	static const ImagePtr chatDefPhotos[4] = {
-		ImagePtr(qsl(":/ava/art/chatcolor1.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/chatcolor2.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/chatcolor3.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/chatcolor4.png"), "PNG"),
-	};
-	return chatDefPhotos[index];
-}
-
-ImagePtr channelDefPhoto(int index) {
-	static const ImagePtr channelDefPhotos[4] = {
-		ImagePtr(qsl(":/ava/art/channelcolor1.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/channelcolor2.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/channelcolor3.png"), "PNG"),
-		ImagePtr(qsl(":/ava/art/channelcolor4.png"), "PNG"),
-	};
-	return channelDefPhotos[index];
-}
 
 NotifySettings globalNotifyAll, globalNotifyUsers, globalNotifyChats;
 NotifySettingsPtr globalNotifyAllPtr = UnknownNotifySettings, globalNotifyUsersPtr = UnknownNotifySettings, globalNotifyChatsPtr = UnknownNotifySettings;
@@ -105,8 +86,17 @@ PeerData::PeerData(const PeerId &id) : id(id)
 , photoId(UnknownPeerPhotoId)
 , nameVersion(0)
 , notify(UnknownNotifySettings)
-, _userpic(isUser() ? userDefPhoto(colorIndex) : ((isChat() || isMegagroup()) ? chatDefPhoto(colorIndex) : channelDefPhoto(colorIndex))) {
+, _userpic(peerDefPhoto(colorIndex)) {
 	if (!peerIsUser(id) && !peerIsChannel(id)) updateName(QString(), QString(), QString());
+}
+
+void PeerData::updateInitials() {
+	QString oldInitials(initials);
+	initials = isUser() ? initialsByName(asUser()->firstName, asUser()->lastName) : initialsByName(name);
+
+	if (App::main() && !(photoId && photoId != UnknownPeerPhotoId) && initials != oldInitials) {
+		emit App::main()->peerPhotoChanged(this);
+	}
 }
 
 void PeerData::updateName(const QString &newName, const QString &newNameOrPhone, const QString &newUsername) {
@@ -147,6 +137,7 @@ void PeerData::updateName(const QString &newName, const QString &newNameOrPhone,
 	Names oldNames = names;
 	NameFirstChars oldChars = chars;
 	fillNames();
+	updateInitials();
 
 	if (App::main()) {
 		emit App::main()->peerNameChanged(this, oldNames, oldChars);
@@ -163,12 +154,7 @@ ImagePtr PeerData::currentUserpic() const {
 	}
 	_userpic->load();
 
-	if (isUser()) {
-		return userDefPhoto(colorIndex);
-	} else if (isMegagroup() || isChat()) {
-		return chatDefPhoto(colorIndex);
-	}
-	return channelDefPhoto(colorIndex);
+	return peerDefPhoto(colorIndex);
 }
 
 void PeerData::paintUserpic(Painter &p, int size, int x, int y) const {
@@ -183,14 +169,16 @@ StorageKey PeerData::userpicUniqueKey() const {
 }
 
 void PeerData::saveUserpic(const QString &path) const {
-	currentUserpic()->pixCircled().save(path, "PNG");
+	genUserpic().save(path, "PNG");
 }
 
 QPixmap PeerData::genUserpic(int size) const {
-	if (cRoundedUserpics())
-		return currentUserpic()->pixCircled(size, size);
-	else
-		return currentUserpic()->pix(size, size);
+	ImagePtr userpic = currentUserpic();
+	QPixmap pixmap = currentUserpic()->pixCircled(size, size);
+	if (userpic.v() == peerDefPhoto(colorIndex).v()) {
+		drawInitialsPixmap(&pixmap, initials);
+	}
+	return pixmap;
 }
 
 const Text &BotCommand::descriptionText() const {
@@ -209,17 +197,17 @@ void UserData::setPhoto(const MTPUserProfilePhoto &p) { // see Local::readPeer a
 		const auto &d(p.c_userProfilePhoto());
 		newPhotoId = d.vphoto_id.v;
 		newPhotoLoc = App::imageLocation(160, 160, d.vphoto_small);
-		newPhoto = newPhotoLoc.isNull() ? userDefPhoto(colorIndex) : ImagePtr(newPhotoLoc);
+		newPhoto = newPhotoLoc.isNull() ? peerDefPhoto(colorIndex) : ImagePtr(newPhotoLoc);
 		//App::feedPhoto(App::photoFromUserPhoto(peerToUser(id), MTP_int(unixtime()), p));
 	} break;
 	default: {
 		newPhotoId = 0;
 		if (id == ServiceUserId) {
-			if (_userpic.v() == userDefPhoto(colorIndex).v()) {
+			if (_userpic.v() == peerDefPhoto(colorIndex).v()) {
 				newPhoto = ImagePtr(QPixmap::fromImage(App::wnd()->iconLarge().scaledToWidth(160, Qt::SmoothTransformation), Qt::ColorOnly), "PNG");
 			}
 		} else {
-			newPhoto = userDefPhoto(colorIndex);
+			newPhoto = peerDefPhoto(colorIndex);
 		}
 		newPhotoLoc = StorageImageLocation();
 	} break;
@@ -386,13 +374,13 @@ void ChatData::setPhoto(const MTPChatPhoto &p, const PhotoId &phId) { // see Loc
 			newPhotoId = phId;
 		}
 		newPhotoLoc = App::imageLocation(160, 160, d.vphoto_small);
-		newPhoto = newPhotoLoc.isNull() ? chatDefPhoto(colorIndex) : ImagePtr(newPhotoLoc);
-//		photoFull = ImagePtr(640, 640, d.vphoto_big, chatDefPhoto(colorIndex));
+		newPhoto = newPhotoLoc.isNull() ? peerDefPhoto(colorIndex) : ImagePtr(newPhotoLoc);
+//		photoFull = ImagePtr(640, 640, d.vphoto_big, peerDefPhoto(colorIndex));
 	} break;
 	default: {
 		newPhotoId = 0;
 		newPhotoLoc = StorageImageLocation();
-		newPhoto = chatDefPhoto(colorIndex);
+		newPhoto = peerDefPhoto(colorIndex);
 //		photoFull = ImagePtr();
 	} break;
 	}
@@ -415,13 +403,13 @@ void ChannelData::setPhoto(const MTPChatPhoto &p, const PhotoId &phId) { // see 
 			newPhotoId = phId;
 		}
 		newPhotoLoc = App::imageLocation(160, 160, d.vphoto_small);
-		newPhoto = newPhotoLoc.isNull() ? (isMegagroup() ? chatDefPhoto(colorIndex) : channelDefPhoto(colorIndex)) : ImagePtr(newPhotoLoc);
-//		photoFull = ImagePtr(640, 640, d.vphoto_big, (isMegagroup() ? chatDefPhoto(colorIndex) : channelDefPhoto(colorIndex)));
+		newPhoto = newPhotoLoc.isNull() ? (peerDefPhoto(colorIndex)) : ImagePtr(newPhotoLoc);
+//		photoFull = ImagePtr(640, 640, d.vphoto_big, (peerDefPhoto(colorIndex));
 	} break;
 	default: {
 		newPhotoId = 0;
 		newPhotoLoc = StorageImageLocation();
-		newPhoto = (isMegagroup() ? chatDefPhoto(colorIndex) : channelDefPhoto(colorIndex));
+		newPhoto = (peerDefPhoto(colorIndex));
 //		photoFull = ImagePtr();
 	} break;
 	}
@@ -1529,4 +1517,36 @@ void LocationClickHandler::onClick(Qt::MouseButton button) const {
 void LocationClickHandler::setup() {
 	QString latlon(qsl("%1,%2").arg(_coords.lat).arg(_coords.lon));
 	_text = qsl("https://maps.google.com/maps?q=") + latlon + qsl("&ll=") + latlon + qsl("&z=16");
+}
+
+QString initialsByName(const QString &firstName, const QString &lastName) {
+	QString first = textSearchKey(firstName);
+	QString last = textSearchKey(lastName);
+	if (last.isEmpty()) {
+		QStringList nameList = first.split(cWordSplit(), QString::SkipEmptyParts);
+		if (nameList.size() >= 2) {
+			first = nameList.first();
+			last = nameList.last();
+		}
+	}
+
+	return (first.left(1) + (last.isEmpty() ? ((first.size() > 1) ? first.at(1) : QChar()) : last.at(0))).toUpper();
+}
+
+void drawInitialsPixmap(QPixmap *pm, QString initials) {
+	QPainter p(pm);
+	QSize pmSize = pm->size();
+
+	QFont font = st::initialsFont;
+	font.setPixelSize(int(pmSize.height() * st::initialsCoef));
+
+	p.setFont(font);
+	p.setPen(st::white);
+
+	int initialsWidth = p.fontMetrics().width(initials);
+	if (initialsWidth > pmSize.width()) {
+		font.setPixelSize(int((pmSize.height() * st::initialsCoef) * (pmSize.width() / float(initialsWidth))));
+	}
+
+	p.drawText(pm->rect(), Qt::AlignCenter, initials);
 }

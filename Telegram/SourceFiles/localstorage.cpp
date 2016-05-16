@@ -544,7 +544,7 @@ namespace {
 
 		// 500-600 reserved in Official TDesktop and used for Plus
 		dbiDropdownOnTab        = 500,
-		dbiRoundedUserpics      = 501,
+		dbiRoundedUserpics      = 501,  // deprecated
 		dbiReplaceDoubles       = 502,
 
 		dbiVersion              = 666,
@@ -1312,12 +1312,10 @@ namespace {
 			cSetDropdownOnTab(v == 1);
 		} break;
 
-		case dbiRoundedUserpics: {
+		case dbiRoundedUserpics: {  // deprecated
 			qint32 v;
 			stream >> v;
 			if (!_checkStreamStatus(stream)) return false;
-
-			cSetRoundedUserpics(v == 1);
 		} break;
 
 		case dbiReplaceDoubles: {
@@ -1326,7 +1324,6 @@ namespace {
 			if (!_checkStreamStatus(stream)) return false;
 
 			cSetReplaceDoubles(v == 1);
-			printf("cSetReplaceDoubles %d", v);
 		} break;
 
 		default:
@@ -2229,7 +2226,6 @@ namespace Local {
 
 		// Plus Settings
 		data.stream << quint32(dbiDropdownOnTab) << quint32(cDropdownOnTab() ? 1 : 0);
-		data.stream << quint32(dbiRoundedUserpics) << qint32(cRoundedUserpics() ? 1 : 0);
 
 		settings.writeEncrypted(data, _settingsKey);
 	}
@@ -3544,7 +3540,7 @@ namespace Local {
 					user->inputUser = MTP_inputUser(MTP_int(peerToUser(user->id)), MTP_long((user->access == UserNoAccess) ? 0 : user->access));
 				}
 
-				user->setUserpic(photoLoc.isNull() ? ImagePtr(userDefPhoto(user->colorIndex)) : ImagePtr(photoLoc));
+				user->setUserpic(photoLoc.isNull() ? ImagePtr(peerDefPhoto(user->colorIndex)) : ImagePtr(photoLoc));
 			}
 		} else if (result->isChat()) {
 			ChatData *chat = result->asChat();
@@ -3572,7 +3568,7 @@ namespace Local {
 				chat->input = MTP_inputPeerChat(MTP_int(peerToChat(chat->id)));
 				chat->inputChat = MTP_int(peerToChat(chat->id));
 
-				chat->setUserpic(photoLoc.isNull() ? ImagePtr(chatDefPhoto(chat->colorIndex)) : ImagePtr(photoLoc));
+				chat->setUserpic(photoLoc.isNull() ? ImagePtr(peerDefPhoto(chat->colorIndex)) : ImagePtr(photoLoc));
 			}
 		} else if (result->isChannel()) {
 			ChannelData *channel = result->asChannel();
@@ -3594,7 +3590,7 @@ namespace Local {
 				channel->input = MTP_inputPeerChannel(MTP_int(peerToChannel(channel->id)), MTP_long(access));
 				channel->inputChannel = MTP_inputChannel(MTP_int(peerToChannel(channel->id)), MTP_long(access));
 
-				channel->setUserpic(photoLoc.isNull() ? ImagePtr((channel->isMegagroup() ? chatDefPhoto(channel->colorIndex) : channelDefPhoto(channel->colorIndex))) : ImagePtr(photoLoc));
+				channel->setUserpic(photoLoc.isNull() ? ImagePtr(peerDefPhoto(channel->colorIndex)) : ImagePtr(photoLoc));
 			}
 		}
 		if (!wasLoaded) {

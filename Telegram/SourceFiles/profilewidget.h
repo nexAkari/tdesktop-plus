@@ -44,8 +44,6 @@ public:
 	void resizeEvent(QResizeEvent *e) override;
 	void contextMenuEvent(QContextMenuEvent *e) override;
 
-	void step_photo(float64 ms, bool timer);
-
 	PeerData *peer() const;
 	bool allMediaShown() const;
 
@@ -172,8 +170,6 @@ private:
 	Text _about;
 	int32 _aboutTop, _aboutHeight;
 
-	anim::fvalue a_photoOver;
-	Animation _a_photo;
 	bool _photoOver;
 
 	QString _errorText;
@@ -238,8 +234,8 @@ public:
 	void resizeEvent(QResizeEvent *e) override;
 	void mousePressEvent(QMouseEvent *e) override;
 	void paintEvent(QPaintEvent *e) override;
-    void dragEnterEvent(QDragEnterEvent *e) override;
-    void dropEvent(QDropEvent *e) override;
+	void dragEnterEvent(QDragEnterEvent *e) override;
+	void dropEvent(QDropEvent *e) override;
 	void keyPressEvent(QKeyEvent *e) override;
 
 	void paintTopBar(Painter &p, float64 over, int32 decreaseWidth);

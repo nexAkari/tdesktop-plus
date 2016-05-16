@@ -314,7 +314,6 @@ DeclareSetting(bool, AutoPlayGif);
 
 // Plus Settings
 DeclareSetting(bool, DropdownOnTab);
-DeclareSetting(bool, RoundedUserpics);
 DeclareSetting(bool, ReplaceDoubles);
 
 void settingsParseArgs(int argc, char *argv[]);

@@ -70,8 +70,6 @@ ProfileInner::ProfileInner(ProfileWidget *profile, ScrollArea *scroll, PeerData 
 , _aboutTop(0)
 , _aboutHeight(0)
 
-, a_photoOver(0)
-, _a_photo(animation(this, &ProfileInner::step_photo))
 , _photoOver(false)
 
 // migrate to megagroup
@@ -690,8 +688,8 @@ void ProfileInner::reorderParticipants() {
 			_participantsData.resize(_peerChat->participants.size());
 		}
 		UserData *self = App::self();
-        bool onlyMe = true;
-        for (ChatData::Participants::const_iterator i = _peerChat->participants.cbegin(), e = _peerChat->participants.cend(); i != e; ++i) {
+		bool onlyMe = true;
+		for (ChatData::Participants::const_iterator i = _peerChat->participants.cbegin(), e = _peerChat->participants.cend(); i != e; ++i) {
 			UserData *user = i.key();
 			int32 until = App::onlineForSort(user, t);
 			Participants::iterator before = _participants.begin();
@@ -702,8 +700,8 @@ void ProfileInner::reorderParticipants() {
 				while (before != _participants.end() && App::onlineForSort(*before, t) >= until) {
 					++before;
 				}
-                if (until > t && onlyMe) onlyMe = false;
-            }
+				if (until > t && onlyMe) onlyMe = false;
+			}
 			_participants.insert(before, user);
 			if (until > t) {
 				++onlineCount;
@@ -712,7 +710,7 @@ void ProfileInner::reorderParticipants() {
 		if (_peerChat->noParticipantInfo()) {
 			if (App::api()) App::api()->requestFullPeer(_peer);
 			if (_onlineText.isEmpty()) _onlineText = lng_chat_status_members(lt_count, _peerChat->count);
-        } else if (onlineCount && !onlyMe) {
+		} else if (onlineCount && !onlyMe) {
 			_onlineText = lng_chat_status_members_online(lt_count, _participants.size(), lt_count_online, onlineCount);
 		} else {
 			_onlineText = lng_chat_status_members(lt_count, _participants.size());
@@ -837,18 +835,8 @@ void ProfileInner::paintEvent(QPaintEvent *e) {
 
 	// profile
 	top += st::profilePadding.top();
-	if (_photoLink || _peerUser || (_peerChat && !_peerChat->canEdit()) || (_peerChannel && !_amCreator)) {
-		_peer->paintUserpic(p, st::profilePhotoSize, _left, top);
-	} else {
-		if (a_photoOver.current() < 1) {
-			p.drawSprite(QPoint(_left, top), st::setPhotoImg);
-		}
-		if (a_photoOver.current() > 0) {
-			p.setOpacity(a_photoOver.current());
-			p.drawSprite(QPoint(_left, top), st::setOverPhotoImg);
-			p.setOpacity(1);
-		}
-	}
+
+	_peer->paintUserpic(p, st::profilePhotoSize, _left, top);
 
 	int32 namew = _width - st::profilePhotoSize - st::profileNameLeft;
 	p.setPen(st::black->p);
@@ -1093,10 +1081,6 @@ void ProfileInner::mouseMoveEvent(QMouseEvent *e) {
 	bool photoOver = QRect(_left, st::profilePadding.top(), st::setPhotoSize, st::setPhotoSize).contains(e->pos());
 	if (photoOver != _photoOver) {
 		_photoOver = photoOver;
-		if (!_photoLink && ((_peerChat && _peerChat->canEdit()) || (_peerChannel && _amCreator))) {
-			a_photoOver.start(_photoOver ? 1 : 0);
-			_a_photo.start();
-		}
 	}
 	if (!_photoLink && (_peerUser || (_peerChat && !_peerChat->canEdit()) || (_peerChannel && !_amCreator))) {
 		setCursor((_kickOver || _kickDown || ClickHandler::getActive()) ? style::cur_pointer : style::cur_default);
@@ -1551,17 +1535,6 @@ void ProfileInner::onCopyPhone() {
 void ProfileInner::onCopyUsername() {
 	if (!_peerUser) return;
 	QApplication::clipboard()->setText('@' + _peerUser->username);
-}
-
-void ProfileInner::step_photo(float64 ms, bool timer) {
-	float64 dt = ms / st::setPhotoDuration;
-	if (dt >= 1) {
-		_a_photo.stop();
-		a_photoOver.finish();
-	} else {
-		a_photoOver.update(dt, anim::linear);
-	}
-	if (timer) update(_left, st::profilePadding.top(), st::setPhotoSize, st::setPhotoSize);
 }
 
 PeerData *ProfileInner::peer() const {

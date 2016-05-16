@@ -198,12 +198,10 @@ inline bool isNotifyMuted(NotifySettingsPtr settings, TimeId *changeIn = 0) {
 	return false;
 }
 
-static const int UserColorsCount = 8;
+static const int PeerColorsCount = 8;
 
 style::color peerColor(int index);
-ImagePtr userDefPhoto(int index);
-ImagePtr chatDefPhoto(int index);
-ImagePtr channelDefPhoto(int index);
+ImagePtr peerDefPhoto(int index);
 
 static const PhotoId UnknownPeerPhotoId = 0xFFFFFFFFFFFFFFFFULL;
 
@@ -277,6 +275,7 @@ public:
 	void updateName(const QString &newName, const QString &newNameOrPhone, const QString &newUsername);
 
 	void fillNames();
+	void updateInitials();
 
 	const Text &dialogName() const;
 	const QString &shortName() const;
@@ -293,6 +292,7 @@ public:
 	Names names; // for filtering
 	typedef QSet<QChar> NameFirstChars;
 	NameFirstChars chars;
+	QString initials;
 
 	enum LoadedStatus {
 		NotLoaded = 0x00,
@@ -315,7 +315,7 @@ public:
 	}
 	StorageKey userpicUniqueKey() const;
 	void saveUserpic(const QString &path) const;
-	QPixmap genUserpic(int size) const;
+	QPixmap genUserpic(int size = 0) const;
 
 	PhotoId photoId;
 	StorageImageLocation photoLoc;
@@ -1373,3 +1373,6 @@ private:
 	QString _text;
 
 };
+
+QString initialsByName(const QString &firstName, const QString &lastName = "");
+void drawInitialsPixmap(QPixmap *pm, QString initials);

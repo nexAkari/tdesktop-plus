@@ -15,22 +15,14 @@
         <file>art/iconbig256.png</file>
     </qresource>
     <qresource prefix="/ava">
-        <file>art/chatcolor1.png</file>
-        <file>art/chatcolor2.png</file>
-        <file>art/chatcolor3.png</file>
-        <file>art/chatcolor4.png</file>
-        <file>art/channelcolor1.png</file>
-        <file>art/channelcolor2.png</file>
-        <file>art/channelcolor3.png</file>
-        <file>art/channelcolor4.png</file>
-        <file>art/usercolor1.png</file>
-        <file>art/usercolor2.png</file>
-        <file>art/usercolor3.png</file>
-        <file>art/usercolor4.png</file>
-        <file>art/usercolor5.png</file>
-        <file>art/usercolor6.png</file>
-        <file>art/usercolor7.png</file>
-        <file>art/usercolor8.png</file>
+        <file>art/peercolor1.png</file>
+        <file>art/peercolor2.png</file>
+        <file>art/peercolor3.png</file>
+        <file>art/peercolor4.png</file>
+        <file>art/peercolor5.png</file>
+        <file>art/peercolor6.png</file>
+        <file>art/peercolor7.png</file>
+        <file>art/peercolor8.png</file>
     </qresource>
     <qresource prefix="/qt-project.org">
         <file>qmime/freedesktop.org.xml</file>

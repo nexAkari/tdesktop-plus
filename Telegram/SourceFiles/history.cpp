@@ -4224,7 +4224,7 @@ void HistoryDocument::draw(Painter &p, const QRect &r, TextSelection selection, 
 		}
 
 		if (radial || (!loaded && !_data->loading())) {
-            float64 radialOpacity = (radial && loaded && !_data->uploading()) ? _animation->radial.opacity() : 1;
+			float64 radialOpacity = (radial && loaded && !_data->uploading()) ? _animation->radial.opacity() : 1;
 			QRect inner(rthumb.x() + (rthumb.width() - st::msgFileSize) / 2, rthumb.y() + (rthumb.height() - st::msgFileSize) / 2, st::msgFileSize, st::msgFileSize);
 			p.setPen(Qt::NoPen);
 			if (selected) {
@@ -4835,7 +4835,7 @@ void HistoryGif::draw(Painter &p, const QRect &r, TextSelection selection, uint6
 	}
 
 	if (radial || (!_gif && ((!loaded && !_data->loading()) || !cAutoPlayGif())) || (_gif == BadClipReader)) {
-        float64 radialOpacity = (radial && loaded && _parent->id > 0) ? _animation->radial.opacity() : 1;
+		float64 radialOpacity = (radial && loaded && _parent->id > 0) ? _animation->radial.opacity() : 1;
 		QRect inner(rthumb.x() + (rthumb.width() - st::msgFileSize) / 2, rthumb.y() + (rthumb.height() - st::msgFileSize) / 2, st::msgFileSize, st::msgFileSize);
 		p.setPen(Qt::NoPen);
 		if (selected) {
@@ -5388,7 +5388,9 @@ void HistoryContact::draw(Painter &p, const QRect &r, TextSelection selection, u
 		if (_contact) {
 			_contact->paintUserpic(p, st::msgFileThumbSize, rthumb.x(), rthumb.y());
 		} else {
-			p.drawPixmap(rthumb.topLeft(), userDefPhoto(qAbs(_userId) % UserColorsCount)->pixCircled(st::msgFileThumbSize, st::msgFileThumbSize));
+			QPixmap pix = peerDefPhoto(qAbs(_userId) % PeerColorsCount)->pixCircled(st::msgFileThumbSize, st::msgFileThumbSize);
+			drawInitialsPixmap(&pix, initialsByName(_fname, _lname));
+			p.drawPixmap(rthumb.topLeft(), pix);
 		}
 		if (selected) {
 			App::roundRect(p, rthumb, textstyleCurrent()->selectOverlay, SelectedOverlayCorners);
@@ -5403,9 +5405,12 @@ void HistoryContact::draw(Painter &p, const QRect &r, TextSelection selection, u
 		nametop = st::msgFileNameTop;
 		nameright = st::msgFilePadding.left();
 		statustop = st::msgFileStatusTop;
-
 		QRect inner(rtlrect(st::msgFilePadding.left(), st::msgFilePadding.top(), st::msgFileSize, st::msgFileSize, width));
-		p.drawPixmap(inner.topLeft(), userDefPhoto(qAbs(_parent->id) % UserColorsCount)->pixCircled(st::msgFileSize, st::msgFileSize));
+
+		QPixmap pix = peerDefPhoto(qAbs(_userId) % PeerColorsCount)->pixCircled(st::msgFileSize, st::msgFileSize);
+		drawInitialsPixmap(&pix, initialsByName(_fname, _lname));
+
+		p.drawPixmap(inner.topLeft(), pix);
 	}
 	int32 namewidth = width - nameleft - nameright;
 
@@ -7977,13 +7982,13 @@ void HistoryMessage::drawInDialog(Painter &p, const QRect &r, bool act, const Hi
 }
 
 QString HistoryMessage::notificationHeader() const {
-    return (!_history->peer->isUser() && !isPost()) ? from()->name : QString();
+	return (!_history->peer->isUser() && !isPost()) ? from()->name : QString();
 }
 
 QString HistoryMessage::notificationText() const {
 	QString msg(inDialogsText());
-    if (msg.size() > 0xFF) msg = msg.mid(0, 0xFF) + qsl("...");
-    return msg;
+	if (msg.size() > 0xFF) msg = msg.mid(0, 0xFF) + qsl("...");
+	return msg;
 }
 
 bool HistoryMessage::displayFromPhoto() const {
@@ -8479,9 +8484,9 @@ void HistoryService::drawInDialog(Painter &p, const QRect &r, bool act, const Hi
 }
 
 QString HistoryService::notificationText() const {
-    QString msg = _text.originalText();
-    if (msg.size() > 0xFF) msg = msg.mid(0, 0xFF) + qsl("...");
-    return msg;
+	QString msg = _text.originalText();
+	if (msg.size() > 0xFF) msg = msg.mid(0, 0xFF) + qsl("...");
+	return msg;
 }
 
 HistoryMedia *HistoryService::getMedia() const {

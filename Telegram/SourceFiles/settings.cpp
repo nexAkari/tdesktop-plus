@@ -162,7 +162,6 @@ bool gAutoPlayGif = true;
 
 // Plus Settings
 bool gDropdownOnTab = false;
-bool gRoundedUserpics = true;
 bool gReplaceDoubles = true;
 
 void settingsParseArgs(int argc, char *argv[]) {
@@ -210,7 +209,7 @@ void settingsParseArgs(int argc, char *argv[]) {
 		gLaunchMode = LaunchModeShowCrash;
 		gStartUrl = fromUtf8Safe(argv[1]);
 	}
-    for (int32 i = 0; i < argc; ++i) {
+	for (int32 i = 0; i < argc; ++i) {
 		if (string("-testmode") == argv[i]) {
 			gTestMode = true;
 		} else if (string("-debug") == argv[i]) {

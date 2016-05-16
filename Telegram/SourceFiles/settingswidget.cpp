@@ -118,8 +118,6 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 , _cancelPhoto(this, lang(lng_cancel))
 , _nameOver(false)
 , _photoOver(false)
-, a_photoOver(0)
-, _a_photo(animation(this, &SettingsInner::step_photo))
 
 // contact info
 , _phoneText(self() ? App::formatPhone(self()->phone) : QString())
@@ -208,7 +206,6 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 
 // Plus Settings
 , _dropdownOnTab(this, lang(lng_settings_dropdown_on_tab), cDropdownOnTab())
-, _roundedUserpics(this, lang(lng_settings_rounded_userpics), cRoundedUserpics())
 , _replaceDoubles(this, lang(lng_settings_replace_doubles), cReplaceDoubles())
 	{
 	if (self()) {
@@ -335,13 +332,12 @@ SettingsInner::SettingsInner(SettingsWidget *parent) : TWidget(parent)
 
 	// Plus Settings
 	connect(&_dropdownOnTab, SIGNAL(changed()), this, SLOT(onDropdownOnTab()));
-	connect(&_roundedUserpics, SIGNAL(changed()), this, SLOT(onRoundedUserpics()));
 	connect(&_replaceDoubles, SIGNAL(changed()), this, SLOT(onReplaceDoubles()));
 
 
-    if (App::main()) {
-        connect(App::main(), SIGNAL(peerUpdated(PeerData*)), this, SLOT(peerUpdated(PeerData*)));
-    }
+	if (App::main()) {
+		connect(App::main(), SIGNAL(peerUpdated(PeerData*)), this, SLOT(peerUpdated(PeerData*)));
+	}
 
 	updateOnlineDisplay();
 
@@ -412,18 +408,7 @@ void SettingsInner::paintEvent(QPaintEvent *e) {
 			p.drawText(_uploadPhoto.x() + st::setStatusLeft, _cancelPhoto.y() + st::linkFont->ascent, lang(lng_settings_uploading_photo));
 		}
 
-		if (_photoLink) {
-			self()->paintUserpicLeft(p, st::setPhotoSize, _left, top, st::setWidth);
-		} else {
-			if (a_photoOver.current() < 1) {
-				p.drawSprite(QPoint(_left, top), st::setPhotoImg);
-			}
-			if (a_photoOver.current() > 0) {
-				p.setOpacity(a_photoOver.current());
-				p.drawSprite(QPoint(_left, top), st::setOverPhotoImg);
-				p.setOpacity(1);
-			}
-		}
+		self()->paintUserpicLeft(p, st::setPhotoSize, _left, top, st::setWidth);
 
 		p.setFont(st::setStatusFont->f);
 		bool connecting = App::wnd()->connectingVisible();
@@ -496,46 +481,45 @@ void SettingsInner::paintEvent(QPaintEvent *e) {
 	top += st::setVersionHeight;
 	#endif
 
-    if (cPlatform() == dbipWindows) {
-        top += _workmodeTray.height() + st::setLittleSkip;
-        top += _workmodeWindow.height() + st::setSectionSkip;
+	if (cPlatform() == dbipWindows) {
+		top += _workmodeTray.height() + st::setLittleSkip;
+		top += _workmodeWindow.height() + st::setSectionSkip;
 
-        top += _autoStart.height() + st::setLittleSkip;
-        top += _startMinimized.height() + st::setSectionSkip;
+		top += _autoStart.height() + st::setLittleSkip;
+		top += _startMinimized.height() + st::setSectionSkip;
 
 		top += _sendToMenu.height() + st::setLittleSkip;
-    } else if (_supportTray) {
+	} else if (_supportTray) {
 		top += _workmodeTray.height() + st::setLittleSkip;
 	}
 
 	top += _dropdownOnTab.height() + st::setLittleSkip;  // Plus Setting
-	top += _roundedUserpics.height() + st::setLittleSkip;  // Plus Setting
 
-    if (!cRetina()) {
-        p.setFont(st::setHeaderFont->f);
-        p.setPen(st::setHeaderColor->p);
-        p.drawText(_left + st::setHeaderLeft, top + st::setHeaderTop + st::setHeaderFont->ascent, lang(lng_settings_scale_label));
-        top += st::setHeaderSkip;
-        top += _dpiAutoScale.height() + st::setLittleSkip;
+	if (!cRetina()) {
+		p.setFont(st::setHeaderFont->f);
+		p.setPen(st::setHeaderColor->p);
+		p.drawText(_left + st::setHeaderLeft, top + st::setHeaderTop + st::setHeaderFont->ascent, lang(lng_settings_scale_label));
+		top += st::setHeaderSkip;
+		top += _dpiAutoScale.height() + st::setLittleSkip;
 
-        top += _dpiSlider.height() + st::dpiFont4->height;
-        int32 sLeft = _dpiSlider.x() + _dpiWidth1 / 2, sWidth = _dpiSlider.width();
-        float64 sStep = (sWidth - _dpiWidth1 / 2 - _dpiWidth4 / 2) / float64(dbisScaleCount - 2);
-        p.setFont(st::dpiFont1->f);
+		top += _dpiSlider.height() + st::dpiFont4->height;
+		int32 sLeft = _dpiSlider.x() + _dpiWidth1 / 2, sWidth = _dpiSlider.width();
+		float64 sStep = (sWidth - _dpiWidth1 / 2 - _dpiWidth4 / 2) / float64(dbisScaleCount - 2);
+		p.setFont(st::dpiFont1->f);
 
-        p.setPen((scaleIs(dbisOne) ? st::dpiActive : st::dpiInactive)->p);
-        p.drawText(sLeft + qRound(0 * sStep) - _dpiWidth1 / 2, top - (st::dpiFont4->height - st::dpiFont1->height) / 2 - st::dpiFont1->descent, scaleLabel(dbisOne));
-        p.setFont(st::dpiFont2->f);
-        p.setPen((scaleIs(dbisOneAndQuarter) ? st::dpiActive : st::dpiInactive)->p);
-        p.drawText(sLeft + qRound(1 * sStep) - _dpiWidth2 / 2, top - (st::dpiFont4->height - st::dpiFont2->height) / 2 - st::dpiFont2->descent, scaleLabel(dbisOneAndQuarter));
-        p.setFont(st::dpiFont3->f);
-        p.setPen((scaleIs(dbisOneAndHalf) ? st::dpiActive : st::dpiInactive)->p);
-        p.drawText(sLeft + qRound(2 * sStep) - _dpiWidth3 / 2, top - (st::dpiFont4->height - st::dpiFont3->height) / 2 - st::dpiFont3->descent, scaleLabel(dbisOneAndHalf));
-        p.setFont(st::dpiFont4->f);
-        p.setPen((scaleIs(dbisTwo) ? st::dpiActive : st::dpiInactive)->p);
-        p.drawText(sLeft + qRound(3 * sStep) - _dpiWidth4 / 2, top - (st::dpiFont4->height - st::dpiFont4->height) / 2 - st::dpiFont4->descent, scaleLabel(dbisTwo));
-        p.setFont(st::linkFont->f);
-    }
+		p.setPen((scaleIs(dbisOne) ? st::dpiActive : st::dpiInactive)->p);
+		p.drawText(sLeft + qRound(0 * sStep) - _dpiWidth1 / 2, top - (st::dpiFont4->height - st::dpiFont1->height) / 2 - st::dpiFont1->descent, scaleLabel(dbisOne));
+		p.setFont(st::dpiFont2->f);
+		p.setPen((scaleIs(dbisOneAndQuarter) ? st::dpiActive : st::dpiInactive)->p);
+		p.drawText(sLeft + qRound(1 * sStep) - _dpiWidth2 / 2, top - (st::dpiFont4->height - st::dpiFont2->height) / 2 - st::dpiFont2->descent, scaleLabel(dbisOneAndQuarter));
+		p.setFont(st::dpiFont3->f);
+		p.setPen((scaleIs(dbisOneAndHalf) ? st::dpiActive : st::dpiInactive)->p);
+		p.drawText(sLeft + qRound(2 * sStep) - _dpiWidth3 / 2, top - (st::dpiFont4->height - st::dpiFont3->height) / 2 - st::dpiFont3->descent, scaleLabel(dbisOneAndHalf));
+		p.setFont(st::dpiFont4->f);
+		p.setPen((scaleIs(dbisTwo) ? st::dpiActive : st::dpiInactive)->p);
+		p.drawText(sLeft + qRound(3 * sStep) - _dpiWidth4 / 2, top - (st::dpiFont4->height - st::dpiFont4->height) / 2 - st::dpiFont4->descent, scaleLabel(dbisTwo));
+		p.setFont(st::linkFont->f);
+	}
 
 	if (self()) {
 		// chat options
@@ -721,26 +705,25 @@ void SettingsInner::resizeEvent(QResizeEvent *e) {
 	top += st::setVersionHeight;
 	#endif
 
-    if (cPlatform() == dbipWindows) {
-        _workmodeTray.move(_left, top); top += _workmodeTray.height() + st::setLittleSkip;
-        _workmodeWindow.move(_left, top); top += _workmodeWindow.height() + st::setSectionSkip;
+	if (cPlatform() == dbipWindows) {
+		_workmodeTray.move(_left, top); top += _workmodeTray.height() + st::setLittleSkip;
+		_workmodeWindow.move(_left, top); top += _workmodeWindow.height() + st::setSectionSkip;
 
-        _autoStart.move(_left, top); top += _autoStart.height() + st::setLittleSkip;
-        _startMinimized.move(_left, top); top += _startMinimized.height() + st::setSectionSkip;
+		_autoStart.move(_left, top); top += _autoStart.height() + st::setLittleSkip;
+		_startMinimized.move(_left, top); top += _startMinimized.height() + st::setSectionSkip;
 
 		_sendToMenu.move(_left, top); top += _sendToMenu.height() + st::setLittleSkip;
-    } else if (_supportTray) {
+	} else if (_supportTray) {
 		_workmodeTray.move(_left, top); top += _workmodeTray.height() + st::setLittleSkip;
 	}
 
 	_dropdownOnTab.move(_left, top); top += _dropdownOnTab.height() + st::setLittleSkip;  // Plus Setting
-	_roundedUserpics.move(_left, top); top += _roundedUserpics.height() + st::setLittleSkip;  // Plus Setting
 
-    if (!cRetina()) {
-        top += st::setHeaderSkip;
-        _dpiAutoScale.move(_left, top); top += _dpiAutoScale.height() + st::setLittleSkip;
-        _dpiSlider.move(_left, top); top += _dpiSlider.height() + st::dpiFont4->height;
-    }
+	if (!cRetina()) {
+		top += st::setHeaderSkip;
+		_dpiAutoScale.move(_left, top); top += _dpiAutoScale.height() + st::setLittleSkip;
+		_dpiSlider.move(_left, top); top += _dpiSlider.height() + st::dpiFont4->height;
+	}
 
 	// chat options
 	if (self()) {
@@ -887,10 +870,6 @@ void SettingsInner::mouseMoveEvent(QMouseEvent *e) {
 		bool photoOver = QRect(_left, st::setTop, st::setPhotoSize, st::setPhotoSize).contains(e->pos());
 		if (photoOver != _photoOver) {
 			_photoOver = photoOver;
-			if (!_photoLink) {
-				a_photoOver.start(_photoOver ? 1 : 0);
-				_a_photo.start();
-			}
 		}
 
 		setCursor((_nameOver || _photoOver) ? style::cur_pointer : style::cur_default);
@@ -920,17 +899,6 @@ void SettingsInner::contextMenuEvent(QContextMenuEvent *e) {
 void SettingsInner::updateAdaptiveLayout() {
 	showAll();
 	resizeEvent(0);
-}
-
-void SettingsInner::step_photo(float64 ms, bool timer) {
-	float64 dt = ms / st::setPhotoDuration;
-	if (dt >= 1) {
-		_a_photo.stop();
-		a_photoOver.finish();
-	} else {
-		a_photoOver.update(dt, anim::linear);
-	}
-	if (timer) update(_left, st::setTop, st::setPhotoSize, st::setPhotoSize);
 }
 
 void SettingsInner::updateSize(int32 newWidth) {
@@ -1083,38 +1051,37 @@ void SettingsInner::showAll() {
 	_autoUpdate.show();
 	setUpdatingState(_updatingState, true);
 	#endif
-    if (cPlatform() == dbipWindows) {
-        _workmodeTray.show();
-        _workmodeWindow.show();
+	if (cPlatform() == dbipWindows) {
+		_workmodeTray.show();
+		_workmodeWindow.show();
 
-        _autoStart.show();
-        _startMinimized.show();
+		_autoStart.show();
+		_startMinimized.show();
 
 		_sendToMenu.show();
-    } else {
-        if (_supportTray) {
+	} else {
+		if (_supportTray) {
 			_workmodeTray.show();
 		} else {
 			_workmodeTray.hide();
 		}
-        _workmodeWindow.hide();
+		_workmodeWindow.hide();
 
-        _autoStart.hide();
-        _startMinimized.hide();
+		_autoStart.hide();
+		_startMinimized.hide();
 
 		_sendToMenu.hide();
 	}
 
 	_dropdownOnTab.show();  // Plus Setting
-	_roundedUserpics.show();  // Plus Setting
 
-    if (cRetina()) {
-        _dpiSlider.hide();
-        _dpiAutoScale.hide();
-    } else {
-        _dpiSlider.show();
-        _dpiAutoScale.show();
-    }
+	if (cRetina()) {
+		_dpiSlider.hide();
+		_dpiAutoScale.hide();
+	} else {
+		_dpiSlider.show();
+		_dpiAutoScale.show();
+	}
 
 	// chat options
 	if (self()) {
@@ -1298,28 +1265,28 @@ void SettingsInner::onTelegramFAQ() {
 }
 
 void SettingsInner::chooseCustomLang() {
-    QString file;
-    QByteArray arr;
-    if (filedialogGetOpenFile(file, arr, qsl("Choose language .strings file"), qsl("Language files (*.strings)"))) {
-        _testlang = QFileInfo(file).absoluteFilePath();
+	QString file;
+	QByteArray arr;
+	if (filedialogGetOpenFile(file, arr, qsl("Choose language .strings file"), qsl("Language files (*.strings)"))) {
+		_testlang = QFileInfo(file).absoluteFilePath();
 		LangLoaderPlain loader(_testlang, LangLoaderRequest(lng_sure_save_language, lng_cancel, lng_box_ok));
-        if (loader.errors().isEmpty()) {
-            LangLoaderResult result = loader.found();
-            QString text = result.value(lng_sure_save_language, langOriginal(lng_sure_save_language)),
+		if (loader.errors().isEmpty()) {
+			LangLoaderResult result = loader.found();
+			QString text = result.value(lng_sure_save_language, langOriginal(lng_sure_save_language)),
 				save = result.value(lng_box_ok, langOriginal(lng_box_ok)),
 				cancel = result.value(lng_cancel, langOriginal(lng_cancel));
-            ConfirmBox *box = new ConfirmBox(text, save, st::defaultBoxButton, cancel);
-            connect(box, SIGNAL(confirmed()), this, SLOT(onSaveTestLang()));
+			ConfirmBox *box = new ConfirmBox(text, save, st::defaultBoxButton, cancel);
+			connect(box, SIGNAL(confirmed()), this, SLOT(onSaveTestLang()));
 			Ui::showLayer(box);
-        } else {
+		} else {
 			Ui::showLayer(new InformBox("Custom lang failed :(\n\nError: " + loader.errors()));
-        }
-    }
+		}
+	}
 }
 
 void SettingsInner::onChangeLanguage() {
 	if ((_changeLanguage.clickModifiers() & Qt::ShiftModifier) && (_changeLanguage.clickModifiers() & Qt::AltModifier)) {
-        chooseCustomLang();
+		chooseCustomLang();
 	} else {
 		Ui::showLayer(new LanguageBox());
 	}
@@ -1874,11 +1841,6 @@ void SettingsInner::onPhotoUpdateDone(PeerId peer) {
 // Plus Settings
 void SettingsInner::onDropdownOnTab() {
 	cSetDropdownOnTab(_dropdownOnTab.checked());
-	Local::writeSettings();
-}
-
-void SettingsInner::onRoundedUserpics() {
-	cSetRoundedUserpics(_roundedUserpics.checked());
 	Local::writeSettings();
 }
 
